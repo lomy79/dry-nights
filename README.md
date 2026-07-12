@@ -80,6 +80,7 @@ A proteggere i dati sono le **Row-Level Security policy** definite in
   modello dati completo, con tutte le decisioni di design. È la fonte di verità
   del dominio.
 - [`docs/schema.sql`](docs/schema.sql) — schema Postgres pronto da eseguire.
+- [`docs/deploy-vercel.md`](docs/deploy-vercel.md) — come pubblicare l'app su Vercel.
 
 ## Contribuire
 
