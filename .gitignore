@@ -1,0 +1,26 @@
+# Dipendenze
+node_modules/
+
+# Build
+dist/
+dist-ssr/
+*.local
+
+# Segreti — le chiavi Supabase NON vanno in Git (vedi CLAUDE.md)
+.env
+.env.*
+!.env.example
+secret
+secrets
+*.secret
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.log
+npm-debug.log*
+
+# Test / coverage
+coverage/
