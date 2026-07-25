@@ -87,6 +87,13 @@ apply_resp="$(curl -fsS "${auth[@]}" -H "Content-Type: application/json" \
   }
 echo "  ✓ Schema applicato."
 
+# ---- 3b) configura l'Auth (magic link + redirect URL) -----------------------
+echo "▶ Configuro l'Auth di staging (magic link, redirect locale + preview Vercel)…"
+PROJECT_REF="$REF" \
+SITE_URL="${STAGING_SITE_URL:-http://localhost:5173}" \
+REDIRECT_URLS="${STAGING_REDIRECT_URLS:-http://localhost:5173,https://*-lomy79.vercel.app}" \
+  "$SCRIPT_DIR/configure-auth.sh"
+
 # ---- 4) recupera le chiavi e stampa il riepilogo ----------------------------
 echo "▶ Recupero le chiavi API…"
 keys_json="$(curl -fsS "${auth[@]}" "$API/projects/$REF/api-keys")"
@@ -113,9 +120,16 @@ Password del database (SALVALA in un password manager, non è recuperabile):
 
   DB password: $DB_PASS
 
+Auth GIÀ configurata (magic link, Site URL http://localhost:5173, redirect verso
+localhost e i preview *-lomy79.vercel.app). Se il tuo pattern preview di Vercel è
+diverso, rilancia scripts/configure-auth.sh con REDIRECT_URLS aggiornato.
+
 Prossimi passi:
-  • Supabase -> Authentication -> URL Configuration del progetto staging:
-    aggiungi http://localhost:5173 e il pattern dei preview Vercel.
+  • Configura anche la PRODUZIONE:
+      PROJECT_REF=<ref-prod> SITE_URL=https://<dominio-prod> \
+      REDIRECT_URLS='https://<dominio-prod>' ./scripts/configure-auth.sh
+  • Per email affidabili (magic link reale) imposta un SMTP tuo: vedi le variabili
+    SMTP_* in scripts/configure-auth.sh.
   • Non committare mai questi valori: il .env è già in .gitignore.
 ============================================================
 EOF

@@ -84,14 +84,44 @@ Dopo il deploy, sul dominio Vercel (HTTPS):
 - il refresh su una sotto-route (es. `/storico`) non deve dare 404 — garantito
   dal rewrite SPA.
 
+## Autenticazione e Redirect URL
+
+L'app fa login con **magic link** (email, nessuna password) e reindirizza a
+`window.location.origin`. Perché il link nell'email funzioni, quell'origin deve
+essere nell'`uri_allow_list` del progetto, altrimenti si ricade sul *Site URL*.
+
+Configura l'Auth di **ciascun** progetto con
+[`scripts/configure-auth.sh`](../scripts/configure-auth.sh) (imposta magic link,
+Site URL e redirect ammessi):
+
+```bash
+export SUPABASE_ACCESS_TOKEN=sbp_...
+
+# Staging (locale + preview Vercel) — lo fa già setup-staging.sh, ma è ripetibile:
+PROJECT_REF=<ref-staging> \
+SITE_URL=http://localhost:5173 \
+REDIRECT_URLS='http://localhost:5173,https://*-lomy79.vercel.app' \
+./scripts/configure-auth.sh
+
+# Produzione:
+PROJECT_REF=<ref-prod> \
+SITE_URL=https://<dominio-prod> \
+REDIRECT_URLS='https://<dominio-prod>' \
+./scripts/configure-auth.sh
+```
+
+In alternativa, dalla dashboard: Supabase → Authentication → URL Configuration.
+
+> ⚙️ **Registrazioni**: di default sono aperte (serve per creare i primi account
+> genitore col magic link). Per bloccarle dopo il bootstrap, rilancia lo script
+> con `AUTH_DISABLE_SIGNUP=true`.
+
+> ✉️ **Email in produzione**: il mailer integrato di Supabase è pensato solo per i
+> test (poche email/ora, rischio spam). Per un uso reale imposta un **SMTP tuo**
+> (Resend, Brevo, SendGrid — free tier) via le variabili `SMTP_*` dello script o
+> da Dashboard → Authentication → Emails → SMTP.
+
 ## Note
 
-- **Redirect URL di Supabase Auth**: configurali in *ciascun* progetto
-  (Supabase → Authentication → URL Configuration), altrimenti il login non torna
-  sull'app:
-  - progetto **prod** → il dominio di produzione;
-  - progetto **staging** → i domini di *Preview* (i preview di Vercel usano URL
-    generati; puoi usare un pattern con wildcard, es. `https://*-lomy79.vercel.app`,
-    e `http://localhost:5173` per lo sviluppo locale).
 - Il file `.env` locale **non** viene usato da Vercel: in produzione contano solo
   le Environment Variables del progetto.
