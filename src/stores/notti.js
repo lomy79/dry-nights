@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import { supabase } from '@/lib/supabase'
 import { useBambinoStore } from './bambino'
 import { applicaPatch, normalizzaEsito } from '@/domain/schedaMerge'
-import { snapshotSalutePerNotte } from '@/domain/saluteScadenza'
+import { snapshotSalutePerNotte, nottiDaCorreggereRientro } from '@/domain/saluteScadenza'
 import { SCHEMA_VERSION } from '@/domain/costanti'
 
 /**
@@ -92,6 +92,33 @@ export const useNottiStore = defineStore('notti', () => {
     return data
   }
 
+  /**
+   * Rientro a "sano" retroattivo (Decisione 7): dalle notti con data >= `daData`,
+   * quelle marcate "malato" tornano "sano" (i loro snapshot erano congelati e
+   * non si aggiornerebbero da soli). Le notti prima di `daData` restano malato.
+   */
+  async function correggiSaluteRetro(daData) {
+    const bambino = useBambinoStore()
+    if (!bambino.bambinoAttivo) return []
+    // Le notti da correggere secondo la regola pura (usata anche nei test).
+    const daCorreggere = nottiDaCorreggereRientro(perData.value, daData)
+    // Correzione lato DB (filtro server: copre anche eventuali notti non in cache).
+    const { error } = await supabase
+      .from('night_records')
+      .update({ salute_stato: 'sano', salute_sintomi: [] })
+      .eq('child_id', bambino.bambinoAttivo.id)
+      .gte('data_notte', daData)
+      .eq('salute_stato', 'malato')
+    if (error) throw error
+    // Allinea la cache locale in modo coerente con la regola.
+    const mappa = { ...perData.value }
+    for (const dn of daCorreggere) {
+      mappa[dn] = { ...mappa[dn], salute_stato: 'sano', salute_sintomi: [] }
+    }
+    perData.value = mappa
+    return daCorreggere
+  }
+
   /** Realtime: ricevi le modifiche fatte dall'altro genitore. */
   function sottoscrivi() {
     const bambino = useBambinoStore()
@@ -135,6 +162,7 @@ export const useNottiStore = defineStore('notti', () => {
     caricaRecenti,
     record,
     salvaPatch,
+    correggiSaluteRetro,
     sottoscrivi,
     disiscrivi,
     reset,

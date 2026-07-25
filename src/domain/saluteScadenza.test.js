@@ -3,6 +3,7 @@ import {
   statoSaluteEffettivo,
   richiedeReset,
   snapshotSalutePerNotte,
+  nottiDaCorreggereRientro,
   FINESTRA_SALUTE_GIORNI,
 } from './saluteScadenza.js'
 
@@ -89,5 +90,60 @@ describe('snapshot salute sulla scheda notte', () => {
       salute_stato: 'sconosciuto',
       salute_sintomi: [],
     })
+  })
+})
+
+describe('rientro a sano retroattivo (Decisione 7, coda)', () => {
+  // Scenario: malato da lunedì 13, "tornato sano da mercoledì 15".
+  const records = {
+    '2026-07-13': { data_notte: '2026-07-13', salute_stato: 'malato' },
+    '2026-07-14': { data_notte: '2026-07-14', salute_stato: 'malato' },
+    '2026-07-15': { data_notte: '2026-07-15', salute_stato: 'malato' },
+    '2026-07-16': { data_notte: '2026-07-16', salute_stato: 'malato' },
+  }
+
+  it('corregge solo le notti da daData in poi (inclusa)', () => {
+    expect(nottiDaCorreggereRientro(records, '2026-07-15')).toEqual([
+      '2026-07-15',
+      '2026-07-16',
+    ])
+  })
+
+  it('le notti prima di daData restano malato', () => {
+    const da = nottiDaCorreggereRientro(records, '2026-07-15')
+    expect(da).not.toContain('2026-07-13')
+    expect(da).not.toContain('2026-07-14')
+  })
+
+  it('daData = oggi corregge solo oggi', () => {
+    expect(nottiDaCorreggereRientro(records, '2026-07-16')).toEqual(['2026-07-16'])
+  })
+
+  it('tocca solo le notti "malato", non asciutte/sane/sconosciute', () => {
+    const misti = {
+      '2026-07-15': { data_notte: '2026-07-15', salute_stato: 'malato', esito: 'bagnato' },
+      '2026-07-16': { data_notte: '2026-07-16', salute_stato: 'sano', esito: 'asciutto' },
+      '2026-07-17': { data_notte: '2026-07-17', salute_stato: 'sconosciuto' },
+      '2026-07-18': { data_notte: '2026-07-18', salute_stato: null, esito: 'asciutto' },
+    }
+    expect(nottiDaCorreggereRientro(misti, '2026-07-15')).toEqual(['2026-07-15'])
+  })
+
+  it('mappa vuota o assente → nessuna correzione', () => {
+    expect(nottiDaCorreggereRientro({}, '2026-07-15')).toEqual([])
+    expect(nottiDaCorreggereRientro(null, '2026-07-15')).toEqual([])
+  })
+
+  it('ritorna le date ordinate', () => {
+    const disordine = {
+      '2026-07-18': { data_notte: '2026-07-18', salute_stato: 'malato' },
+      '2026-07-15': { data_notte: '2026-07-15', salute_stato: 'malato' },
+      '2026-07-16': { data_notte: '2026-07-16', salute_stato: 'malato' },
+    }
+    expect(nottiDaCorreggereRientro(disordine, '2026-07-15')).toEqual([
+      '2026-07-15',
+      '2026-07-16',
+      '2026-07-18',
+    ])
   })
 })

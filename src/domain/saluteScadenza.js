@@ -85,3 +85,25 @@ export function snapshotSalutePerNotte(stato, dataNotte) {
   const eff = statoSaluteEffettivo(stato, dataNotte)
   return { salute_stato: eff.stato, salute_sintomi: eff.sintomi }
 }
+
+/**
+ * Rientro a "sano" retroattivo (Decisione 7, coda): al "è tornato sano da X",
+ * le notti con data_notte >= X il cui snapshot è ancora "malato" vanno corrette
+ * a sano; quelle PRIMA di X restano malato (era davvero malato allora).
+ *
+ * Funzione pura: riceve una mappa { 'YYYY-MM-DD': record } e la data di rientro.
+ * Ritorna le date-notte da correggere, ordinate. Il confronto tra stringhe ISO
+ * 'YYYY-MM-DD' è cronologico, quindi non serve parsare le date.
+ *
+ * @param {Object} records - mappa data_notte -> record
+ * @param {string} daData - 'YYYY-MM-DD', inclusiva
+ * @returns {string[]} data_notte da riportare a sano
+ */
+export function nottiDaCorreggereRientro(records, daData) {
+  return Object.values(records ?? {})
+    .filter(
+      (r) => r && r.data_notte >= daData && r.salute_stato === 'malato',
+    )
+    .map((r) => r.data_notte)
+    .sort()
+}

@@ -9,6 +9,8 @@ import { etichetteValori } from '@/domain/costanti'
 const props = defineProps({
   // Stato EFFETTIVO calcolato a monte: { stato, sintomi }.
   effettivo: { type: Object, required: true },
+  // Se lo stato memorizzato è "malato" (per il rientro retroattivo).
+  eraMalato: { type: Boolean, default: false },
 })
 const emit = defineEmits(['conferma'])
 
@@ -39,7 +41,11 @@ function conferma(payload) {
       </button>
     </div>
     <div v-if="aperto" style="margin-top: 0.7rem">
-      <SaluteSelettore :sintomi-iniziali="effettivo.sintomi" @conferma="conferma" />
+      <SaluteSelettore
+        :sintomi-iniziali="effettivo.sintomi"
+        :era-malato="eraMalato"
+        @conferma="conferma"
+      />
     </div>
   </div>
 </template>

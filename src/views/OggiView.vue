@@ -7,7 +7,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useBambinoStore } from '@/stores/bambino'
 import { useNottiStore } from '@/stores/notti'
 import { cosaManca, dateNottiRilevanti } from '@/domain/cosaManca'
-import { nottePassata, giornoEffettivo } from '@/domain/dataNotte'
+import { nottePassata, giornoEffettivo, dataNotteIndietro } from '@/domain/dataNotte'
 import { contestoVuoto } from '@/domain/contesto'
 import { statoSaluteEffettivo } from '@/domain/saluteScadenza'
 import EsitoCard from '@/components/notte/EsitoCard.vue'
@@ -82,10 +82,21 @@ async function salva(dataNotte, patch) {
   }
 }
 
+const eraMalato = computed(() => bambino.statoAttivo?.salute_stato === 'malato')
+
 async function confermaSalute(payload) {
   errore.value = ''
   try {
-    await bambino.impostaSalute(payload)
+    // giorniFa: 0 = oggi; >0 = rientro a sano retroattivo ("da martedì").
+    const daData = dataNotteIndietro(oggi, payload.giorniFa ?? 0)
+    const rientroSano = payload.stato === 'sano' && eraMalato.value
+    await bambino.impostaSalute({
+      stato: payload.stato,
+      sintomi: payload.sintomi,
+      daData,
+    })
+    // Corregge gli snapshot delle notti nel mezzo (erano congelati "malato").
+    if (rientroSano) await notti.correggiSaluteRetro(daData)
   } catch (e) {
     errore.value = e?.message ?? 'Non è stato possibile aggiornare lo stato.'
   }
@@ -139,8 +150,14 @@ onUnmounted(() => notti.disiscrivi())
       Profilo di <strong>{{ bambino.bambinoAttivo.nome }}</strong>.
     </p>
 
-    <!-- Priorità: reset salute scaduta -->
-    <SaluteReset v-if="manca.saluteReset" @conferma="confermaSalute" />
+    <!-- Salute: reset forzato se scaduta (Decisione 7), altrimenti controllo quotidiano -->
+    <SaluteReset v-if="manca.saluteReset" :era-malato="eraMalato" @conferma="confermaSalute" />
+    <SaluteControllo
+      v-else
+      :effettivo="saluteEffettiva"
+      :era-malato="eraMalato"
+      @conferma="confermaSalute"
+    />
 
     <!-- MATTINA: esito della notte passata (resta aperto fino a "Ho finito") -->
     <EsitoCard
@@ -185,13 +202,6 @@ onUnmounted(() => notti.disiscrivi())
         @salva="(p) => salva(manca.contestoProsp.dataNotte, p)"
       />
     </div>
-
-    <!-- Salute del giorno: sempre aggiornabile (se non è già forzato il reset) -->
-    <SaluteControllo
-      v-if="!manca.saluteReset"
-      :effettivo="saluteEffettiva"
-      @conferma="confermaSalute"
-    />
 
     <p v-if="errore" class="error">{{ errore }}</p>
 

@@ -98,9 +98,11 @@ export const useBambinoStore = defineStore('bambino', () => {
    * `salute_confermato_il` = oggi: fa ripartire la finestra di validità. Al
    * reset si passa sempre da una riselezione attiva (rimettere ≠ confermare).
    */
-  async function impostaSalute({ stato, sintomi = [] }) {
+  async function impostaSalute({ stato, sintomi = [], daData }) {
     if (!bambinoAttivo.value) throw new Error('Nessun bambino attivo')
-    const oggiISO = format(new Date(), 'yyyy-MM-dd')
+    // `daData` = da quando vale lo stato (Decisione 7: "è tornato sano da martedì").
+    // Default: oggi. Per lo stato malato fa ripartire la finestra di validità.
+    const dataConferma = daData ?? format(new Date(), 'yyyy-MM-dd')
     const { data, error } = await supabase
       .from('child_active_states')
       .upsert(
@@ -108,7 +110,7 @@ export const useBambinoStore = defineStore('bambino', () => {
           child_id: bambinoAttivo.value.id,
           salute_stato: stato,
           salute_sintomi: stato === 'sano' ? [] : sintomi,
-          salute_confermato_il: oggiISO,
+          salute_confermato_il: dataConferma,
         },
         { onConflict: 'child_id' },
       )
