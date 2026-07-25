@@ -27,6 +27,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 SCHEMA_FILE="$ROOT_DIR/docs/schema.sql"
 
+# Carica le credenziali da .env.scripts se presente (non committato).
+if [ -f "$ROOT_DIR/.env.scripts" ]; then
+  set -a; . "$ROOT_DIR/.env.scripts"; set +a
+fi
+
 API="https://api.supabase.com/v1"
 REGION="${SUPABASE_REGION:-eu-central-1}"
 PROJECT_NAME="${STAGING_PROJECT_NAME:-dry-nights-staging}"

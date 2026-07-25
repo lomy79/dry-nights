@@ -29,6 +29,12 @@
 #
 set -euo pipefail
 
+# Carica le credenziali da .env.scripts se presente (non committato).
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+if [ -f "$ROOT_DIR/.env.scripts" ]; then
+  set -a; . "$ROOT_DIR/.env.scripts"; set +a
+fi
+
 API="https://api.supabase.com/v1"
 
 command -v curl >/dev/null 2>&1 || { echo "❌ Manca 'curl'." >&2; exit 1; }
