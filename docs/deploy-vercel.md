@@ -21,9 +21,20 @@ nelle PR si lavora su staging, così i dati reali non vengono mai sporcati.
 
 Setup una tantum del progetto staging:
 
-1. Crea un secondo progetto su Supabase (es. `dry-nights-staging`).
-2. Esegui lo stesso [`schema.sql`](schema.sql) — schema identico, dati separati.
-3. Il tuo `.env` locale deve puntare a **staging** (vedi `.env.example`).
+- **Automatico** (consigliato): lo script [`scripts/setup-staging.sh`](../scripts/setup-staging.sh)
+  crea il progetto via Management API e applica `schema.sql`. Richiede un
+  *Personal Access Token* Supabase (Account → Access Tokens) e l'`organization_id`:
+  ```bash
+  export SUPABASE_ACCESS_TOKEN=sbp_...
+  export SUPABASE_ORG_ID=xxxxxxxx      # GET https://api.supabase.com/v1/organizations
+  ./scripts/setup-staging.sh
+  ```
+  Al termine stampa `VITE_SUPABASE_URL` e la publishable key da incollare nel
+  `.env` locale e nelle env *Preview* di Vercel. Nessun segreto viene salvato su disco.
+- **Manuale**: crea un secondo progetto dalla dashboard (es. `dry-nights-staging`)
+  ed esegui `schema.sql` nell'SQL editor.
+
+In entrambi i casi il tuo `.env` locale deve puntare a **staging** (vedi `.env.example`).
 
 ## 1. Collega il repository (una volta sola)
 
