@@ -60,11 +60,42 @@ function chiaveDiversa(subscription) {
   return !stessiByte(new Uint8Array(attuale), base64UrlToUint8Array(VAPID_PUBLIC))
 }
 
-/** La subscription di QUESTO dispositivo, se c'e'. */
+/**
+ * `serviceWorker.ready` non ha timeout: se il service worker non si registra
+ * (in `npm run dev` senza devOptions, o per un errore di rete) la promise resta
+ * appesa PER SEMPRE e l'interfaccia mostra un caricamento infinito. Meglio
+ * arrendersi e dire cosa non va.
+ */
+const ATTESA_SW_MS = 10000
+
+async function registrazioneServiceWorker() {
+  let scaduto
+  const timeout = new Promise((_, reject) => {
+    scaduto = setTimeout(
+      () => reject(new Error('Il service worker non si è avviato.')),
+      ATTESA_SW_MS,
+    )
+  })
+  try {
+    return await Promise.race([navigator.serviceWorker.ready, timeout])
+  } finally {
+    clearTimeout(scaduto)
+  }
+}
+
+/**
+ * La subscription di QUESTO dispositivo, se c'e'.
+ * Senza service worker restituisce null invece di esplodere: all'avvio significa
+ * solo "non attivo qui", che e' esattamente quello che la UI deve mostrare.
+ */
 export async function sottoscrizioneCorrente() {
   if (!pushSupportato()) return null
-  const registrazione = await navigator.serviceWorker.ready
-  return registrazione.pushManager.getSubscription()
+  try {
+    const registrazione = await registrazioneServiceWorker()
+    return registrazione.pushManager.getSubscription()
+  } catch {
+    return null
+  }
 }
 
 /**
@@ -104,7 +135,19 @@ export async function attivaSuQuestoDispositivo() {
     )
   }
 
-  const registrazione = await navigator.serviceWorker.ready
+  let registrazione
+  try {
+    registrazione = await registrazioneServiceWorker()
+  } catch {
+    // Qui invece l'errore va detto: hai premuto un bottone e non è successo nulla.
+    throw new Error(
+      import.meta.env.DEV
+        ? 'Service worker non disponibile. In sviluppo serve `devOptions.enabled` ' +
+          'in vite.config.js, oppure prova con `npm run build && npm run preview`.'
+        : 'Il service worker non si è avviato: ricarica la pagina e riprova.',
+    )
+  }
+
   let subscription = await registrazione.pushManager.getSubscription()
 
   if (subscription && chiaveDiversa(subscription)) {

@@ -15,6 +15,10 @@ secret
 secrets
 *.secret
 
+# Stato locale della CLI Supabase (ref dell'ultimo progetto su cui si è fatto
+# deploy). È per macchina, e qui i progetti sono due: non deve finire in Git.
+supabase/.temp/
+
 # Editor / OS
 .DS_Store
 .idea/

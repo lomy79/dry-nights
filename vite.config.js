@@ -17,6 +17,14 @@ export default defineConfig({
       // La registrazione la fa main.js: cosi' e' esplicita e non ne partono due.
       injectRegister: null,
       includeAssets: ['favicon.svg'],
+      // Senza questo, in `npm run dev` il service worker non esiste proprio e le
+      // notifiche non sono provabili: `serviceWorker.ready` resta appeso per
+      // sempre. Sviluppare i promemoria richiederebbe una build a ogni modifica.
+      devOptions: {
+        enabled: true,
+        type: 'module',
+        navigateFallback: 'index.html',
+      },
       manifest: {
         name: 'Notti serene',
         short_name: 'Notti serene',
