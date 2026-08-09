@@ -30,6 +30,12 @@ raccolta, quindi si parte presto. La prima versione include tutto il flusso prog
 - **Profilo bambino condiviso** tra i due genitori via `child_members` + RLS.
 - **Flag salute persistente con scadenza** (Decisione 7): ≠ sano vale max 3-4 giorni,
   poi l'app obbliga a reimpostare ripartendo da "sano"; oltre la scadenza → "sconosciuto".
+- **"Non ha bevuto" ≠ "non so" ≠ "non risposto"** (Decisione 9): ogni fascia di `liquidi`
+  ammette `nessuna` e `non_so`, esclusive fra loro e con le bevande. Senza, il silenzio
+  significava tre cose insieme — lo stesso errore che evitiamo per l'esito.
+- **La UI ordina le fasce per ciò che il genitore SA, non solo per ciò che pesa**
+  (Decisione 10): "a cena" aperta e in alto perché è il dato che verrà inserito davvero;
+  le altre richiudibili. Un dato raccolto ogni sera vale più di uno decisivo e sempre vuoto.
 - **Dati strutturati** (toggle/scelte), non testo libero: veloci da inserire e analizzabili.
   Unica eccezione voluta: il campo `note` della sez. 5, che raccoglie l'imprevisto che
   nessun chip prevede. Non deve mai diventare il posto dove finiscono dati strutturabili.

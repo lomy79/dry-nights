@@ -15,59 +15,103 @@ function riga(etichetta, valore) {
   return { etichetta, valore: Array.isArray(valore) ? valore.join(', ') : valore }
 }
 
-const righe = computed(() => {
+/**
+ * Le righe raggruppate come sono raggruppate nella testa di chi legge: prima
+ * com'è andata, poi la serata che l'ha preceduta, poi la giornata. Una lista
+ * unica e piatta mescolava l'esito — il dato — col contesto facoltativo, e a
+ * colpo d'occhio sembravano la stessa cosa.
+ * Le sezioni senza nemmeno una riga valorizzata spariscono: il riepilogo mostra
+ * ciò che c'è, non l'elenco di ciò che manca.
+ */
+const sezioni = computed(() => {
   const r = props.record
   if (!r) return []
-  const out = []
 
-  // Esito
-  out.push(riga('Esito', etichettaValore('esito', r.esito)))
-  out.push(riga('Quanto', etichettaValore('gravita', r.gravita)))
-  if (r.episodi) out.push(riga('Episodi', String(r.episodi)))
-  out.push(riga('Si è alzato', etichettaValore('minzione', r.minzione)))
-  if (r.numero_risvegli) out.push(riga('Risvegli', String(r.numero_risvegli)))
+  const liquidiPerFascia = riassuntoLiquidi(r.liquidi).map(({ orario, tipi }) =>
+    riga(etichettaValore('liquidi_orario', orario), etichetteValori('liquidi_tipo', tipi)),
+  )
 
-  // Contesto serale
-  if (r.pipi_prima_dormire != null) {
-    out.push(riga('Pipì prima di dormire', r.pipi_prima_dormire ? 'Sì' : 'No'))
-  }
-  out.push(riga('Liquidi la sera', etichettaValore('liquidi_quantita', r.liquidi_quantita)))
-  // Bevande correlate: una riga per fascia, con i tipi bevuti in quella fascia.
-  for (const { orario, tipi } of riassuntoLiquidi(r.liquidi)) {
-    out.push(riga(etichettaValore('liquidi_orario', orario), etichetteValori('liquidi_tipo', tipi)))
-  }
-  out.push(riga('Cibi sospetti', etichetteValori('cibi_sospetti', r.cibi_sospetti)))
+  const gruppi = [
+    {
+      titolo: 'La notte',
+      righe: [
+        riga('Esito', etichettaValore('esito', r.esito)),
+        riga('Quanto', etichettaValore('gravita', r.gravita)),
+        r.episodi ? riga('Episodi', String(r.episodi)) : null,
+        riga('Si è alzato', etichettaValore('minzione', r.minzione)),
+        r.numero_risvegli ? riga('Risvegli', String(r.numero_risvegli)) : null,
+        riga('Umore', etichettaValore('umore_bambino', r.umore_bambino)),
+      ],
+    },
+    {
+      titolo: 'La serata prima',
+      righe: [
+        r.pipi_prima_dormire != null
+          ? riga('Pipì prima di dormire', r.pipi_prima_dormire ? 'Sì' : 'No')
+          : null,
+        riga('Liquidi in tutto', etichettaValore('liquidi_quantita', r.liquidi_quantita)),
+        ...liquidiPerFascia,
+        riga('Cibi sospetti', etichetteValori('cibi_sospetti', r.cibi_sospetti)),
+      ],
+    },
+    {
+      titolo: 'La giornata',
+      righe: [
+        riga('Alvo', etichettaValore('alvo', r.alvo)),
+        riga('Sintomi diurni', etichetteValori('sintomi_diurni', r.sintomi_diurni)),
+        riga('Interventi', etichetteValori('interventi', r.interventi)),
+        riga('Salute', etichettaValore('salute_stato', r.salute_stato)),
+        riga('Sintomi', etichetteValori('salute_sintomi', r.salute_sintomi)),
+      ],
+    },
+    {
+      titolo: 'Note',
+      righe: [riga('Note', r.note)],
+    },
+  ]
 
-  // Clinico
-  out.push(riga('Alvo', etichettaValore('alvo', r.alvo)))
-  out.push(riga('Sintomi diurni', etichetteValori('sintomi_diurni', r.sintomi_diurni)))
-  out.push(riga('Interventi', etichetteValori('interventi', r.interventi)))
-
-  // Salute
-  out.push(riga('Salute', etichettaValore('salute_stato', r.salute_stato)))
-  out.push(riga('Sintomi', etichetteValori('salute_sintomi', r.salute_sintomi)))
-
-  // Note e tono
-  out.push(riga('Umore', etichettaValore('umore_bambino', r.umore_bambino)))
-  out.push(riga('Note', r.note))
-
-  return out.filter(Boolean)
+  return gruppi
+    .map((g) => ({ ...g, righe: g.righe.filter(Boolean) }))
+    .filter((g) => g.righe.length > 0)
 })
+
+const vuota = computed(() => sezioni.value.length === 0)
 </script>
 
 <template>
-  <dl class="scheda">
-    <template v-for="r in righe" :key="r.etichetta">
-      <dt>{{ r.etichetta }}</dt>
-      <dd>{{ r.valore }}</dd>
-    </template>
-    <p v-if="righe.length === 0" class="muted" style="margin: 0">
-      Nessun dettaglio registrato.
-    </p>
-  </dl>
+  <div>
+    <section v-for="s in sezioni" :key="s.titolo" class="sezione">
+      <h4>{{ s.titolo }}</h4>
+      <dl class="scheda">
+        <template v-for="r in s.righe" :key="r.etichetta">
+          <dt>{{ r.etichetta }}</dt>
+          <dd>{{ r.valore }}</dd>
+        </template>
+      </dl>
+    </section>
+    <p v-if="vuota" class="muted" style="margin: 0">Nessun dettaglio registrato.</p>
+  </div>
 </template>
 
 <style scoped>
+.sezione + .sezione {
+  margin-top: 1.1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--bordo);
+}
+
+/* Piccolo e in maiuscoletto: separa senza competere coi valori, che sono la
+   cosa da leggere. In un riepilogo il titolo serve a orientarsi, non a essere
+   letto per primo. */
+h4 {
+  margin: 0 0 0.45rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--tenue);
+}
+
 .scheda {
   display: grid;
   grid-template-columns: auto 1fr;

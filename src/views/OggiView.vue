@@ -238,14 +238,22 @@ onUnmounted(() => notti.disiscrivi())
     />
 
     <!-- Contesto di IERI NOTTE, se non compilato la sera prima (a qualsiasi ora) -->
-    <div class="card" v-if="contestoRetroAperto">
+    <div class="card card-tenue" v-if="contestoRetroAperto">
       <div class="recap">
-        <h2 style="margin: 0; font-size: 1.1rem">La serata di ieri</h2>
-        <button class="btn-link" @click="contestoRetroAperto = false">Fatto</button>
+        <h2 class="titolo-card">
+          La serata di ieri <span class="facoltativo">facoltativo</span>
+        </h2>
+        <!-- "Non ricordo" finché è vuota: chiuderla senza compilare dev'essere
+             una risposta legittima, non una rinuncia. "Fatto" suonerebbe come
+             un compito lasciato a metà. -->
+        <button class="btn-link" @click="contestoRetroAperto = false">
+          {{ contestoVuoto(recPassata) ? 'Non ricordo' : 'Fatto' }}
+        </button>
       </div>
       <p class="muted" style="margin-top: 0.4rem">
-        Ieri sera non è stato segnato cosa ha mangiato e bevuto. Se te lo ricordi,
-        aggiungilo qui — anche a memoria. Aiuta a leggere i numeri.
+        Se te lo ricordi, aggiungilo qui — anche a memoria. Se non te lo ricordi
+        va benissimo così: serve a leggere meglio i numeri, non a completare la
+        scheda.
       </p>
       <ContestoEditor :record="recPassata" @salva="(p) => salva(dnPassata, p)" />
     </div>
@@ -263,7 +271,7 @@ onUnmounted(() => notti.disiscrivi())
 
     <!-- SERA: contesto prospettico per la notte in arrivo -->
     <div class="card" v-if="manca.contestoProsp">
-      <h2 style="margin-top: 0; font-size: 1.1rem">Prepariamo stanotte</h2>
+      <h2 class="titolo-card">Prepariamo stanotte</h2>
       <p class="muted" style="margin-top: 0">
         Facoltativo: liquidi e cena di stasera. Serve a far emergere i pattern.
       </p>

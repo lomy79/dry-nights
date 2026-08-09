@@ -51,6 +51,27 @@ export const LIQUIDI_TIPO = [
   { value: 'altro', label: 'Altro' },
 ]
 
+/**
+ * Risposte che NON sono bevande, ma risposte alla domanda.
+ *
+ * Senza queste, "nessun chip acceso" vuol dire tre cose insieme: non ho ancora
+ * risposto, non ha bevuto, non so cosa ha bevuto. Le prime due sono agli
+ * antipodi — "a cena non ha bevuto niente" è un dato prezioso, "non lo so" è un
+ * buco — e confonderle è lo stesso errore che il progetto evita con cura per
+ * l'esito (assenza ≠ asciutto).
+ *
+ * Vivono separate da LIQUIDI_TIPO perché nella UI vanno staccate dalle bevande:
+ * stessa domanda, natura diversa. Sono mutuamente esclusive fra loro e con le
+ * bevande (vedi toggleTipo in liquidi.js).
+ */
+export const LIQUIDI_RISPOSTA = [
+  { value: 'nessuna', label: 'Niente' },
+  { value: 'non_so', label: 'Non so' },
+]
+
+/** Bevande + risposte: tutto ciò che può comparire in una fascia di `liquidi`. */
+export const LIQUIDI_VOCI = [...LIQUIDI_TIPO, ...LIQUIDI_RISPOSTA]
+
 export const LIQUIDI_ORARIO = [
   { value: 'prima_di_cena', label: 'Prima di cena' },
   { value: 'a_cena', label: 'A cena' },
@@ -121,7 +142,12 @@ export const VALORI_AMMESSI = {
   gravita: GRAVITA.map((o) => o.value),
   minzione: MINZIONE.map((o) => o.value),
   liquidi_quantita: LIQUIDI_QUANTITA.map((o) => o.value),
+  // Solo le 5 bevande: rispecchia il CHECK della colonna LEGACY liquidi_tipo[]
+  // (<= v1). Le voci 'nessuna'/'non_so' vivono solo dentro la mappa `liquidi`
+  // (v2), il cui vincolo Postgres verifica soltanto che sia un oggetto JSON —
+  // per questo non serve nessuna migrazione.
   liquidi_tipo: LIQUIDI_TIPO.map((o) => o.value),
+  liquidi_voce: LIQUIDI_VOCI.map((o) => o.value),
   liquidi_orario: LIQUIDI_ORARIO.map((o) => o.value),
   cibi_sospetti: CIBI_SOSPETTI.map((o) => o.value),
   alvo: ALVO.map((o) => o.value),
@@ -137,7 +163,10 @@ export const OPZIONI = {
   gravita: GRAVITA,
   minzione: MINZIONE,
   liquidi_quantita: LIQUIDI_QUANTITA,
-  liquidi_tipo: LIQUIDI_TIPO,
+  // Per le ETICHETTE serve l'insieme completo: il riepilogo deve saper scrivere
+  // "Niente" e "Non so", non solo le bevande.
+  liquidi_tipo: LIQUIDI_VOCI,
+  liquidi_voce: LIQUIDI_VOCI,
   liquidi_orario: LIQUIDI_ORARIO,
   cibi_sospetti: CIBI_SOSPETTI,
   alvo: ALVO,

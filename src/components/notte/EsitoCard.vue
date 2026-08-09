@@ -78,7 +78,7 @@ function salvaUmore(v) {
 
     <!-- Editor -->
     <template v-else>
-      <h2 style="margin-top: 0; font-size: 1.1rem">{{ titolo }}</h2>
+      <h2 class="titolo-card">{{ titolo }}</h2>
       <EsitoEditor :record="record" @salva="onSalva" />
 
       <!-- Umore: solo dopo l'esito, per non appesantire i due tap del mattino.

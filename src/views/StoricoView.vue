@@ -92,8 +92,17 @@ onMounted(async () => {
           <template v-if="modifica">
             <h3>Esito</h3>
             <EsitoEditor :record="r.record" @salva="(p) => salva(r.dataNotte, p)" />
-            <h3>Contesto della serata prima</h3>
-            <ContestoEditor :record="r.record" @salva="(p) => salva(r.dataNotte, p)" />
+
+            <!-- Staccato e smorzato come nella schermata di oggi: ricostruire a
+                 distanza di giorni cosa aveva bevuto è ancora più facoltativo. -->
+            <section class="sezione-tenue">
+              <h3>
+                Contesto della serata prima
+                <span class="facoltativo">facoltativo</span>
+              </h3>
+              <ContestoEditor :record="r.record" @salva="(p) => salva(r.dataNotte, p)" />
+            </section>
+
             <button type="button" class="btn" style="margin-top: 1rem" @click="modifica = false">
               Fatto
             </button>
@@ -156,10 +165,26 @@ onMounted(async () => {
   padding: 0.6rem 0.2rem 1rem;
   border-bottom: 1px solid var(--bordo);
 }
+/* Devono vincere le domande che contengono ("Quanto?", "Si è alzato?"), che
+   sono nere e in 600: un titolo di sezione più tenue del suo contenuto non
+   separa niente. */
 .dettaglio h3 {
-  font-size: 0.95rem;
-  font-weight: 600;
+  font-size: 1.15rem;
+  font-weight: 650;
+  color: var(--testo);
+  margin: 0.3rem 0 0.7rem;
+}
+
+/* Il contesto della serata prima: separato da uno stacco vero, non da un
+   titolo appena più grande. */
+.sezione-tenue {
+  margin-top: 1.6rem;
+  padding-top: 1.1rem;
+  border-top: 1px dashed var(--bordo);
+}
+
+.sezione-tenue h3 {
+  font-size: 1rem;
   color: var(--tenue);
-  margin: 1rem 0 0.5rem;
 }
 </style>

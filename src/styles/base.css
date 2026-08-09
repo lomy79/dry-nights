@@ -45,6 +45,47 @@ h1 {
   margin: 0.9rem 0;
 }
 
+/* Il titolo di una card: sta sopra alle domande che contiene, e deve vincerle.
+   Senza, l'esito annega fra i suoi stessi "Quanto? / Quante volte?". */
+.titolo-card {
+  margin: 0 0 0.7rem;
+  font-size: 1.25rem;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+/* Card FACOLTATIVA: il contesto ricostruito a memoria il mattino dopo.
+   Smorzata di proposito — bordo tratteggiato e titolo tenue — ma su fondo
+   bianco come le altre: restare leggibile conta più che smaterializzarsi.
+   Il contrasto con l'esito nasce abbassando questa, non alzando quello: alzare
+   avrebbe messo in allarme proprio la card che si può ignorare.
+   Staccata anche dallo spazio: non è il seguito dell'esito, è un'altra cosa. */
+.card-tenue {
+  border-style: dashed;
+  margin-top: 1.8rem;
+}
+
+.card-tenue .titolo-card {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--tenue);
+}
+
+/* Dice "puoi saltarla" prima ancora che si legga il testo. */
+.facoltativo {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--tenue);
+  background: var(--sfondo);
+  border: 1px solid var(--bordo);
+  border-radius: 999px;
+  padding: 0.15rem 0.5rem;
+  vertical-align: 0.15em;
+}
+
 .field {
   display: block;
   margin: 0.75rem 0;
@@ -209,11 +250,32 @@ textarea:focus {
   margin: 0.9rem 0;
 }
 
+/* Le etichette sono DOMANDE rivolte al genitore, non didascalie: vanno lette,
+   non intraviste. In grigio tenue sparivano accanto ai chip, che sono scuri e
+   bordati. */
 .gruppo > span.etichetta {
   display: block;
   font-size: 0.9rem;
-  color: var(--tenue);
-  margin-bottom: 0.4rem;
+  font-weight: 600;
+  color: var(--testo);
+  margin-bottom: 0.45rem;
+}
+
+/* Domanda che GOVERNA un blocco (più fasce, più righe), non una riga di chip.
+   Sta un gradino sopra le altre, ma a raggruppare è soprattutto il filo di
+   `.blocco`: la gerarchia non deve reggersi su mezzo punto di font. */
+.gruppo > span.etichetta-sezione {
+  font-size: 0.95rem;
+  font-weight: 650;
+  margin-bottom: 0.55rem;
+}
+
+/* Il filo a sinistra è ciò che dice "queste righe appartengono alla domanda
+   qui sopra". Tenue: raggruppa, non incornicia. */
+.blocco {
+  border-left: 2px solid var(--accento-chiaro);
+  padding-left: 0.85rem;
+  margin-left: 0.1rem;
 }
 
 /* Stepper numerico (episodi / risvegli) */
