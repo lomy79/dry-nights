@@ -54,6 +54,13 @@ per i valori prod e *Preview* per quelli di staging.
 |-----------------------------------|-----------------------------------|----------------------------------|
 | `VITE_SUPABASE_URL`               | URL progetto **prod**             | URL progetto **staging**         |
 | `VITE_SUPABASE_PUBLISHABLE_KEY`   | publishable key **prod**          | publishable key **staging**      |
+| `VITE_VAPID_PUBLIC_KEY`           | chiave VAPID **prod**             | chiave VAPID **staging**         |
+
+> 🔔 La `VITE_VAPID_PUBLIC_KEY` la stampa `scripts/setup-notifiche.sh`, una per
+> progetto (vedi [`docs/notifiche-push.md`](notifiche-push.md)). Chiavi diverse
+> per ambiente sono volute: un test di staging non deve poter suonare sul
+> telefono "vero". Senza la variabile l'app funziona, ma i promemoria restano
+> disattivati.
 
 > ⚠️ Usa **solo** la *publishable key*, mai la secret: nel client è pubblica per
 > natura e a proteggere i dati sono le RLS di Supabase, non la sua segretezza.
@@ -80,7 +87,8 @@ Dopo il deploy, sul dominio Vercel (HTTPS):
 
 - il browser deve proporre **"Aggiungi a schermata home"**;
 - `manifest.webmanifest` e `sw.js` vengono serviti correttamente (già gestiti in
-  `vercel.json`);
+  `vercel.json`). Il service worker è **nostro** (`src/sw.js`, strategia
+  `injectManifest`): oltre al precache riceve i promemoria push;
 - il refresh su una sotto-route (es. `/storico`) non deve dare 404 — garantito
   dal rewrite SPA.
 

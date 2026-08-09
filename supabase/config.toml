@@ -1,0 +1,9 @@
+# Configurazione minima per il deploy delle Edge Function con la CLI Supabase.
+# Il progetto di destinazione si passa sempre con --project-ref (ce ne sono due,
+# staging e produzione), quindi project_id qui è solo un'etichetta locale.
+project_id = "dry-nights"
+
+[functions.invia-promemoria]
+# A chiamarla è pg_cron dal database, non un utente loggato: non c'è nessun JWT
+# da verificare. La protezione è l'header x-cron-secret (vedi la function).
+verify_jwt = false

@@ -29,6 +29,12 @@ export const router = createRouter({
       component: () => import('@/views/StoricoView.vue'),
       meta: { richiedeAuth: true, richiedeBambino: true },
     },
+    {
+      path: '/promemoria',
+      name: 'promemoria',
+      component: () => import('@/views/ImpostazioniView.vue'),
+      meta: { richiedeAuth: true },
+    },
   ],
 })
 

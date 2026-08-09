@@ -18,6 +18,12 @@ describe('momentoDelGiorno', () => {
     expect(momentoDelGiorno(new Date(2026, 6, 13, 2, 0, 0))).toBe('sera')
     expect(momentoDelGiorno(new Date(2026, 6, 13, 5, 0, 0))).toBe('mattina')
   })
+  it('il pomeriggio non è ancora sera: niente "stanotte" alle 17', () => {
+    expect(momentoDelGiorno(new Date(2026, 6, 12, 14, 0, 0))).toBe('mattina')
+    expect(momentoDelGiorno(new Date(2026, 6, 12, 17, 0, 0))).toBe('mattina')
+    expect(momentoDelGiorno(new Date(2026, 6, 12, 20, 59, 0))).toBe('mattina')
+    expect(momentoDelGiorno(new Date(2026, 6, 12, 21, 0, 0))).toBe('sera')
+  })
 })
 
 describe('confine notturno (00:00–05:00): la notte è ancora in corso', () => {
@@ -41,6 +47,23 @@ describe('confine notturno (00:00–05:00): la notte è ancora in corso', () => 
     const date = r.recuperi.map((x) => x.dataNotte)
     expect(date).toContain('2026-07-12')
     expect(date).not.toContain('2026-07-13') // in corso, non recuperabile
+  })
+})
+
+describe('pomeriggio: nessun invito a "prepararsi per stanotte"', () => {
+  // Alle 17 la serata non è ancora successa: chiedere i liquidi di stasera
+  // vorrebbe dire farseli inventare. Resta la porta della mattina.
+  const pomeriggio = new Date(2026, 6, 12, 17, 0, 0)
+
+  it('non propone il contesto prospettico', () => {
+    const r = cosaManca({ oggi: pomeriggio, records: {} })
+    expect(r.momento).toBe('mattina')
+    expect(r.contestoProsp).toBeNull()
+  })
+
+  it('l’esito della notte passata resta comunque registrabile', () => {
+    const r = cosaManca({ oggi: pomeriggio, records: {} })
+    expect(r.esito.dataNotte).toBe('2026-07-12')
   })
 })
 

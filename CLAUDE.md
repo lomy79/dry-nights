@@ -31,6 +31,13 @@ raccolta, quindi si parte presto. La prima versione include tutto il flusso prog
 - **Flag salute persistente con scadenza** (Decisione 7): ≠ sano vale max 3-4 giorni,
   poi l'app obbliga a reimpostare ripartendo da "sano"; oltre la scadenza → "sconosciuto".
 - **Dati strutturati** (toggle/scelte), non testo libero: veloci da inserire e analizzabili.
+  Unica eccezione voluta: il campo `note` della sez. 5, che raccoglie l'imprevisto che
+  nessun chip prevede. Non deve mai diventare il posto dove finiscono dati strutturabili.
+- **Promemoria push via server** (`docs/notifiche-push.md`): una PWA non può programmare
+  da sola una notifica ad app chiusa, quindi la sveglia è `pg_cron` su Supabase → Edge
+  Function → Web Push. Non Vercel: il free tier limita i cron a 1/giorno senza garanzia
+  sul minuto. Chi avvisare lo decide **SQL** (`promemoria_da_inviare()`), non la Edge
+  Function: la regola sta accanto ai dati e si interroga a mano. Solo **Android**.
 
 ## Principi di UX da rispettare
 - Inserimento del minimo (l'esito) in **pochi tap**, pensato per un genitore assonnato.
@@ -39,11 +46,26 @@ raccolta, quindi si parte presto. La prima versione include tutto il flusso prog
 - Evitare meccaniche a "streak" ansiogene: premiare la costanza, non il risultato asciutto.
 - Il bambino (8 anni) può fare lui il tap del mattino; il contesto ricco lo cura il genitore.
 - Notifiche (sera + mattina) = motore della raccolta. Da tenere nel primo giro, non dopo.
+- **Notifica silenziosa se il dato c'è già** — per entrambi i genitori, perché il dato è
+  del bambino, non di chi lo scrive. Un promemoria a scheda piena è rumore e insegna a
+  ignorarlo. I bottoni "Asciutto"/"Bagnato" nella notifica del mattino registrano la notte
+  con un tap; i dettagli del bagnato si aprono ma restano **facoltativi** (nullable a
+  schema), altrimenti la notte bagnata costerebbe più fatica di quella asciutta.
+- **"Sera" inizia alle 21** (`CUTOFF_SERA_ORA`), non nel pomeriggio: prima di quell'ora
+  chiedere il contesto di stanotte significa farlo inventare, la cena non c'è ancora stata.
+  Il pomeriggio resta la coda della mattina (l'esito della notte passata è ancora aperto).
 
 ## Guardrail tecnici
 - Ogni record ha `schema_version`, timestamp e `created_by`/`updated_by`: non rimuoverli.
 - Non distruggere mai dati grezzi: se cambi categorie/fasce, converti in lettura, non nei dati.
 - La logica di scadenza salute vive lato client (legge `child_active_states.salute_confermato_il`).
+- **Due regole sono duplicate in SQL** per i promemoria (il server deve decidere mentre i
+  telefoni dormono): `giorno_effettivo()` rispecchia `ORA_INIZIO_GIORNO = 5` e
+  `contesto_vuoto()` rispecchia `contestoVuoto()`. Se cambi quelle lato client, cambia
+  anche la migration 003: sono l'unico punto di disallineamento possibile.
+- **Ogni ambiente ha le sue chiavi VAPID** (staging ≠ prod): un test non deve poter
+  suonare sul telefono "vero". `scripts/setup-notifiche.sh` è idempotente e le riusa —
+  rigenerarle costringe ogni telefono a riattivarsi.
 
 ## Come lavorare
 - Prima di scrivere codice, **proponi la struttura del progetto** e aspetta conferma.

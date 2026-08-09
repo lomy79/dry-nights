@@ -27,8 +27,13 @@ import {
 import { richiedeReset } from './saluteScadenza.js'
 import { contestoVuoto, statoContesto } from './contesto.js'
 
-/** Dalle 14 in poi consideriamo "sera". Solo un default, sovrascrivibile. */
-export const CUTOFF_SERA_ORA = 14
+/**
+ * Dalle 21 in poi consideriamo "sera". Solo un default, sovrascrivibile.
+ * Non prima: alle 17 "prepariamo stanotte" è fuori tempo — la cena non c'è
+ * ancora stata e il pomeriggio resta la coda della mattina. Alle 21 la serata
+ * è conclusa, quindi liquidi e cena si segnano per quello che sono stati.
+ */
+export const CUTOFF_SERA_ORA = 21
 
 /**
  * 'mattina' | 'sera' in base all'ora di `oggi`.

@@ -19,6 +19,10 @@ colpevolizzare i dati delle notti, per due scopi:
 - 🌗 **Doppio momento di inserimento**: contesto la sera, esito la mattina —
   con un solo tap per il minimo indispensabile, pensato per un genitore assonnato.
 - 🔄 **Sync in tempo reale** tra i due telefoni.
+- 🔔 **Promemoria push** la sera e la mattina, con orari regolabili. Tacciono da
+  soli se il dato è già stato segnato — anche dall'altro genitore. Quello del
+  mattino ha i bottoni *Asciutto* / *Bagnato*: la notte si registra con un tap
+  dalla schermata di blocco.
 - 📊 Dati **strutturati** (toggle e scelte, non testo libero): veloci da inserire
   e realmente analizzabili.
 
@@ -70,6 +74,9 @@ Parti da [`.env.example`](.env.example):
 - `VITE_SUPABASE_PUBLISHABLE_KEY` — la **publishable key** (`sb_publishable_...`),
   pensata per il client. La secret key bypassa le RLS e non deve **mai** finire
   nel frontend.
+- `VITE_VAPID_PUBLIC_KEY` — chiave pubblica dei promemoria push, una per
+  progetto Supabase. La stampa `scripts/setup-notifiche.sh`; senza, l'app
+  funziona ma i promemoria restano disattivati.
 
 A proteggere i dati sono le **Row-Level Security policy** definite in
 [`docs/schema.sql`](docs/schema.sql), non la segretezza della chiave.
@@ -81,6 +88,8 @@ A proteggere i dati sono le **Row-Level Security policy** definite in
   del dominio.
 - [`docs/schema.sql`](docs/schema.sql) — schema Postgres pronto da eseguire.
 - [`docs/deploy-vercel.md`](docs/deploy-vercel.md) — come pubblicare l'app su Vercel.
+- [`docs/notifiche-push.md`](docs/notifiche-push.md) — promemoria push: come
+  funzionano, come si configurano sui due ambienti, come si diagnosticano.
 
 ## Contribuire
 

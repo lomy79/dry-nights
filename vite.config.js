@@ -8,7 +8,14 @@ export default defineConfig({
   plugins: [
     vue(),
     VitePWA({
+      // injectManifest (non generateSW): il service worker e' nostro, perche'
+      // deve gestire l'evento `push` dei promemoria (src/sw.js).
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.js',
       registerType: 'autoUpdate',
+      // La registrazione la fa main.js: cosi' e' esplicita e non ne partono due.
+      injectRegister: null,
       includeAssets: ['favicon.svg'],
       manifest: {
         name: 'Notti serene',
