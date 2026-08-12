@@ -113,10 +113,30 @@ VITE_VAPID_PUBLIC_KEY=BF3x…
 
 Poi **redeploy su Vercel**: è letta a build-time.
 
-Lo script è **idempotente**: rilanciarlo rilegge le chiavi VAPID dai secrets del
-progetto invece di rigenerarle, quindi non invalida le iscrizioni esistenti. Per
-rigenerarle davvero serve `VAPID_RIGENERA=true` — e in quel caso ogni telefono
-deve riattivare i promemoria.
+Lo script è **idempotente**: rilanciarlo rilegge le chiavi VAPID dal file locale
+`.env.vapid.<ref>` invece di rigenerarle, quindi non invalida le iscrizioni
+esistenti. Per rigenerarle davvero serve `VAPID_RIGENERA=true` — e in quel caso
+ogni telefono deve riattivare i promemoria.
+
+### Dove stanno le chiavi, e perché non nei secrets
+
+`.env.vapid.<ref>` (permessi 600, fuori da Git) è **l'unica copia leggibile**
+della coppia VAPID. Dai secrets di Supabase non si rileggono: l'endpoint
+`GET /v1/projects/<ref>/secrets` restituisce lo **SHA-256** di ogni valore, non
+il valore — vale per tutti, anche per `SUPABASE_URL`, che hex non è.
+
+Non è un dettaglio da manuale: la prima versione dello script li rileggeva da lì
+e li riscriveva credendoli le chiavi, quindi **ogni rilancio sostituiva la coppia
+VAPID col proprio digest**. Il salvataggio riusciva, e il danno si vedeva solo
+dopo — `setVapidDetails` gira all'import della Edge Function, quindi con una
+chiave malformata il worker muore al boot e ogni chiamata risponde 500. Per
+questo lo script ora, dopo il deploy, chiama la function **senza segreto e
+pretende un 401**: è la prova che il modulo si è caricato.
+
+Se perdi il file (macchina nuova, cartella ripulita) le chiavi sono perse:
+copialo dall'altra macchina, oppure rigenera e riattiva i telefoni. Lo script si
+ferma da solo se il progetto ha già delle chiavi ma il file locale non c'è — non
+rigenera per inerzia, perché costerebbe una riattivazione a ogni genitore.
 
 ## Attivazione sul telefono
 
@@ -159,11 +179,26 @@ Risposta `{"inviati":0}` = nessun telefono ancora iscritto.
    select * from cron.job where jobname = 'promemoria-push';
    select * from cron.job_run_details order by start_time desc limit 10;
    ```
-5. Errori d'invio?
+5. **La Edge Function che risponde?** Questa è la domanda che gli altri punti
+   non fanno, ed è dove si nasconde il guasto più silenzioso di tutti:
+   ```sql
+   select status_code, count(*), max(created) from net._http_response group by 1;
+   select distinct content from net._http_response where status_code >= 400;
+   ```
+   `cron.job_run_details` dice `succeeded` anche quando la funzione risponde 500:
+   il job ha solo **accodato** la chiamata con `net.http_post`, e ha fatto il suo
+   lavoro. La risposta vera arriva dopo e finisce qui. `net._http_response`
+   conserva circa sei ore, quindi si guarda finché il guasto è in corso.
+6. Errori d'invio?
    ```sql
    select endpoint, last_ok_at, last_error_at, last_error from push_subscriptions;
    ```
-6. Log della Edge Function: Dashboard → Edge Functions → `invia-promemoria` → Logs.
+7. Log della Edge Function: Dashboard → Edge Functions → `invia-promemoria` → Logs.
+
+Nota: finché il guasto è *prima* dell'invio (la query fallisce, la function va in
+errore), `push_subscriptions.last_error` resta **null** e `last_ok_at` pure. Una
+subscription con entrambe le colonne vuote da giorni non è un telefono a posto:
+è un telefono a cui non ha mai provato a scrivere nessuno.
 
 **Arriva due volte.** Non dovrebbe: la primary key di `notification_log`
 (`subscription_id, momento, data_notte`) fa da lucchetto e solo chi riesce a
@@ -175,7 +210,15 @@ subscription è morta e viene cancellata da sola: basta riattivare dall'app.
 
 **Ho cambiato le chiavi VAPID.** Le iscrizioni vecchie restano nel database ma
 sono inservibili. L'app se ne accorge (`chiaveDiversa()` in `src/lib/push.js`) e
-rifà l'iscrizione alla prossima attivazione.
+rifà l'iscrizione alla prossima attivazione. Conviene comunque cancellare le
+righe morte: con la chiave sbagliata il push service risponde **403**, che non è
+fra i codici (404/410) per cui la subscription si cancella da sola.
+
+**La function risponde 500 a ogni chiamata.** Prima di cercare nella logica,
+verifica che parta: `curl -X POST <url-function> -d '{}'` **senza** header
+`x-cron-secret` deve rispondere `401 non autorizzato`. Se risponde 500 con
+`WORKER_ERROR` il modulo non si carica, e il sospetto numero uno sono le chiavi
+VAPID nei secrets (vedi «Dove stanno le chiavi»).
 
 ## Note e limiti noti
 

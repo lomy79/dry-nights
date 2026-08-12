@@ -61,7 +61,9 @@ create table if not exists notification_prefs (
   updated_at    timestamptz not null default now()
 );
 
-create trigger notification_prefs_touch
+-- `or replace` perche' questo file va rilanciato: senza, la seconda esecuzione
+-- muore su "trigger already exists" e con lei tutto il resto della migrazione.
+create or replace trigger notification_prefs_touch
   before update on notification_prefs
   for each row execute function touch_updated_at();
 
@@ -169,6 +171,14 @@ language plpgsql
 security definer
 set search_path = public
 as $$
+-- I nomi di RETURNS TABLE (`subscription_id`, `momento`, `data_notte`) in
+-- plpgsql valgono come VARIABILI, e nella CTE `segnati` gli stessi nomi sono
+-- anche colonne vere di notification_log. Senza questa direttiva Postgres non
+-- sa a quale dei due ci si riferisce e alza "column reference ... is ambiguous"
+-- A OGNI CHIAMATA: la funzione non torna zero righe, muore. E muore in un punto
+-- dove non se ne accorge nessuno — l'errore resta nella risposta HTTP di pg_net,
+-- non tocca push_subscriptions.last_error, e i telefoni tacciono per giorni.
+#variable_conflict use_column
 begin
   return query
   with candidati as (
@@ -214,7 +224,9 @@ begin
     insert into notification_log (subscription_id, momento, data_notte)
     select d.sub_id, d.momento, d.dn from da_inviare d
     on conflict (subscription_id, momento, data_notte) do nothing
-    returning subscription_id, momento, data_notte
+    returning notification_log.subscription_id,
+              notification_log.momento,
+              notification_log.data_notte
   )
   select d.sub_id, d.endpoint, d.p256dh, d.auth_key, d.momento,
          d.child_id, d.nome, d.dn

@@ -72,6 +72,10 @@ raccolta, quindi si parte presto. La prima versione include tutto il flusso prog
 - **Ogni ambiente ha le sue chiavi VAPID** (staging ≠ prod): un test non deve poter
   suonare sul telefono "vero". `scripts/setup-notifiche.sh` è idempotente e le riusa —
   rigenerarle costringe ogni telefono a riattivarsi.
+- **Le chiavi VAPID stanno in `.env.vapid.<ref>`, non nei secrets di Supabase**: l'API
+  `GET /projects/<ref>/secrets` restituisce lo SHA-256 dei valori, non i valori. Non
+  rileggerle da lì per nessun motivo — riscriverle significa sostituirle col digest, e
+  la Edge Function muore al boot (500) senza che nulla punti alla causa.
 
 ## Come lavorare
 - Prima di scrivere codice, **proponi la struttura del progetto** e aspetta conferma.
