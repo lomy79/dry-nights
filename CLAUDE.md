@@ -36,6 +36,13 @@ raccolta, quindi si parte presto. La prima versione include tutto il flusso prog
 - **La UI ordina le fasce per ciò che il genitore SA, non solo per ciò che pesa**
   (Decisione 10): "a cena" aperta e in alto perché è il dato che verrà inserito davvero;
   le altre richiudibili. Un dato raccolto ogni sera vale più di uno decisivo e sempre vuoto.
+- **Le statistiche si contano sulle notti NOTE** (Decisione 11): mai sui giorni di
+  calendario, o ogni buco diventa una notte non-bagnata. La copertura ("27 note su 30")
+  sta accanto al numero grande, non a fondo pagina: è ciò che lo rende vero o falso.
+- **Le correlazioni hanno una soglia scritta** (Decisione 12): sotto 10 notti nel gruppo
+  **più piccolo** si mostra quanto manca, non una percentuale. Niente p-value — su un
+  diario riguardato ogni sera, confronti multipli e optional stopping fabbricano
+  correlazioni a comando. "Netta" solo se l'intervallo sta tutto oltre i 10 punti.
 - **Dati strutturati** (toggle/scelte), non testo libero: veloci da inserire e analizzabili.
   Unica eccezione voluta: il campo `note` della sez. 5, che raccoglie l'imprevisto che
   nessun chip prevede. Non deve mai diventare il posto dove finiscono dati strutturabili.

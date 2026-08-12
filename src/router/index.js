@@ -30,6 +30,12 @@ export const router = createRouter({
       meta: { richiedeAuth: true, richiedeBambino: true },
     },
     {
+      path: '/andamento',
+      name: 'andamento',
+      component: () => import('@/views/AndamentoView.vue'),
+      meta: { richiedeAuth: true, richiedeBambino: true },
+    },
+    {
       path: '/promemoria',
       name: 'promemoria',
       component: () => import('@/views/ImpostazioniView.vue'),

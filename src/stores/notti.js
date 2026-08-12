@@ -53,6 +53,31 @@ export const useNottiStore = defineStore('notti', () => {
   }
 
   /**
+   * Carica tutte le notti di un intervallo di date (estremi inclusi).
+   *
+   * Diversa da `caricaRecenti`, che prende le ultime N righe REGISTRATE: per un
+   * report serve il periodo di calendario, buchi compresi. Le notti mancanti non
+   * tornano dal server — è proprio la loro assenza a renderle "sconosciute"
+   * (Decisione 2) — e a contarle è `statistiche.js` confrontando con le date.
+   */
+  async function caricaIntervallo(da, a) {
+    const bambino = useBambinoStore()
+    if (!bambino.bambinoAttivo) return []
+    const { data, error } = await supabase
+      .from('night_records')
+      .select('*')
+      .eq('child_id', bambino.bambinoAttivo.id)
+      .gte('data_notte', da)
+      .lte('data_notte', a)
+      .order('data_notte', { ascending: true })
+    if (error) throw error
+    const mappa = { ...perData.value }
+    for (const r of data ?? []) mappa[r.data_notte] = r
+    perData.value = mappa
+    return data ?? []
+  }
+
+  /**
    * Applica un patch parziale alla scheda di `dataNotte` e la salva.
    * Fonde coi campi già presenti (Decisione 6) e normalizza l'esito (azzera
    * gravità/episodi se non è 'bagnato', come il CHECK dello schema).
@@ -160,6 +185,7 @@ export const useNottiStore = defineStore('notti', () => {
     perData,
     caricaDate,
     caricaRecenti,
+    caricaIntervallo,
     record,
     salvaPatch,
     correggiSaluteRetro,

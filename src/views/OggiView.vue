@@ -205,6 +205,15 @@ onUnmounted(() => notti.disiscrivi())
           aria-label="Promemoria"
           >🔔</router-link
         >
+        <!-- Come il 🔔: le destinazioni secondarie stanno in un glifo, o la testata
+             di un telefono stretto va a capo e la schermata comincia storta. -->
+        <router-link
+          class="btn-link"
+          :to="{ name: 'andamento' }"
+          title="Andamento"
+          aria-label="Andamento"
+          >📈</router-link
+        >
         <router-link class="btn-link" :to="{ name: 'storico' }">Storico</router-link>
         <button class="btn-link" @click="mostraInvito">Invita</button>
         <button class="btn-link" @click="esci">Esci</button>

@@ -69,7 +69,10 @@ onMounted(async () => {
   <main>
     <header style="display: flex; align-items: baseline; justify-content: space-between">
       <h1>Storico</h1>
-      <router-link class="btn-link" :to="{ name: 'oggi' }">Oggi</router-link>
+      <div style="display: flex; gap: 0.9rem; flex-shrink: 0; align-items: baseline">
+        <router-link class="btn-link" :to="{ name: 'andamento' }">Andamento</router-link>
+        <router-link class="btn-link" :to="{ name: 'oggi' }">Oggi</router-link>
+      </div>
     </header>
 
     <p v-if="caricamento" class="muted">Carico…</p>
