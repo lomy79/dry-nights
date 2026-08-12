@@ -86,6 +86,15 @@ di recupero.
 La notifica della sera non ha bottoni: il contesto ha troppe sfumature per stare
 in una scelta secca.
 
+### Le due icone non sono la stessa cosa
+
+`icon` è l'immagine grande a colori nel corpo della notifica: `icon-192.png`,
+la stessa dell'app. `badge` è l'icona piccola della barra di stato, e Android ne
+usa **solo il canale alfa**, riempiendo la sagoma col colore di sistema. Passargli
+l'icona a colori — come si faceva all'inizio — equivale a dargli un quadrato
+pieno: non si vede l'app rimpicciolita, si vede una macchia bianca. Per questo
+esiste `badge-96.png`, una silhouette bianca su trasparente.
+
 ## Setup di un progetto
 
 Serve `SUPABASE_ACCESS_TOKEN` in `.env.scripts` (lo stesso degli altri script).

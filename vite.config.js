@@ -16,7 +16,10 @@ export default defineConfig({
       registerType: 'autoUpdate',
       // La registrazione la fa main.js: cosi' e' esplicita e non ne partono due.
       injectRegister: null,
-      includeAssets: ['favicon.svg'],
+      // Il badge non e' fra le icone del manifest (quelle le precacha il plugin
+      // da solo): lo usa solo la notifica, quindi va elencato qui o non finisce
+      // nel precache.
+      includeAssets: ['favicon.svg', 'icons/badge-96.png'],
       // Senza questo, in `npm run dev` il service worker non esiste proprio e le
       // notifiche non sono provabili: `serviceWorker.ready` resta appeso per
       // sempre. Sviluppare i promemoria richiederebbe una build a ogni modifica.

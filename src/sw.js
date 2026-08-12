@@ -19,7 +19,15 @@ clientsClaim()
 cleanupOutdatedCaches()
 precacheAndRoute(self.__WB_MANIFEST)
 
+// L'icona grande, a colori, che compare nel corpo della notifica.
 const ICONA = '/icons/icon-192.png'
+
+// Il badge e' l'icona piccola della barra di stato, ed e' un'altra cosa: Android
+// ne usa SOLO il canale alfa e riempie la sagoma del colore di sistema. Passargli
+// l'icona a colori — come si faceva qui — significa dargli un quadrato pieno:
+// il risultato non e' l'icona dell'app rimpicciolita, e' una macchia bianca senza
+// forma. Serve una silhouette bianca su trasparente, ed e' quello che c'e' qui.
+const BADGE = '/icons/badge-96.png'
 
 /**
  * Il payload arriva cifrato dalla Edge Function. Se per qualsiasi motivo non e'
@@ -58,7 +66,7 @@ self.addEventListener('push', (event) => {
     self.registration.showNotification(dati.titolo, {
       body: dati.corpo,
       icon: ICONA,
-      badge: ICONA,
+      badge: BADGE,
       lang: 'it',
       // Stesso tag = la nuova sostituisce la vecchia invece di impilarsi.
       tag: `promemoria-${dati.momento ?? 'x'}-${dati.notte ?? 'x'}`,
