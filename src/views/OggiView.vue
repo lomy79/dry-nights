@@ -8,8 +8,14 @@ import { useBambinoStore } from '@/stores/bambino'
 import { useNottiStore } from '@/stores/notti'
 import { useNotificheStore } from '@/stores/notifiche'
 import { cosaManca, dateNottiRilevanti } from '@/domain/cosaManca'
+import { prossimaDomanda } from '@/domain/domandaDelGiorno'
 import { leggiDeepLinkEsito } from '@/domain/promemoria'
-import { nottePassata, giornoEffettivo, dataNotteIndietro } from '@/domain/dataNotte'
+import {
+  nottePassata,
+  notteInArrivo,
+  giornoEffettivo,
+  dataNotteIndietro,
+} from '@/domain/dataNotte'
 import { contestoVuoto } from '@/domain/contesto'
 import { statoSaluteEffettivo } from '@/domain/saluteScadenza'
 import { etichettaValore } from '@/domain/costanti'
@@ -18,6 +24,7 @@ import ContestoEditor from '@/components/notte/ContestoEditor.vue'
 import NotaCampo from '@/components/notte/NotaCampo.vue'
 import SaluteReset from '@/components/notte/SaluteReset.vue'
 import SaluteControllo from '@/components/notte/SaluteControllo.vue'
+import DomandaSingola from '@/components/notte/DomandaSingola.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -82,6 +89,31 @@ const manca = computed(() =>
 )
 
 const recPassata = computed(() => notti.record(dnPassata))
+
+// --- Una domanda alla volta (sez. 4: i campi che il pediatra chiede per primi) ---
+//
+// I "non ora" vivono nel localStorage e non nel database: sono una preferenza di
+// chi ha in mano il telefono in quel momento, non un dato del bambino. Se stasera
+// rimando io, l'altro genitore può ancora rispondere — ed è giusto, perché magari
+// lui la risposta ce l'ha.
+const rinviate = ref({})
+
+function chiaveRinvii() {
+  return `drynights.domandeRinviate.${bambino.bambinoAttivo?.id ?? 'x'}`
+}
+
+const domanda = computed(() =>
+  prossimaDomanda({ oggi, records: notti.perData, rinviate: rinviate.value }),
+)
+
+async function rispondiDomanda({ campo, valore }) {
+  await salva(domanda.value.dataNotte, { [campo]: valore })
+}
+
+function rinviaDomanda(chiave) {
+  rinviate.value = { ...rinviate.value, [chiave]: giornoEffettivo(oggi) }
+  localStorage.setItem(chiaveRinvii(), JSON.stringify(rinviate.value))
+}
 
 /**
  * Le card esito da mostrare: i recuperi serali più — se stai arrivando da una
@@ -166,7 +198,19 @@ onMounted(async () => {
     await bambino.caricaStato()
     await bambino.caricaMembri()
     invitoNascosto.value = localStorage.getItem(chiaveInvito()) === '1'
+    try {
+      rinviate.value = JSON.parse(localStorage.getItem(chiaveRinvii()) ?? '{}')
+    } catch {
+      rinviate.value = {} // storage sporco: si riparte, non si rompe la schermata
+    }
     await notti.caricaDate(dateNottiRilevanti(oggi))
+    // Le domande lente hanno una cadenza fino a due settimane: per sapere se una
+    // risposta c'è già serve più storia delle quattro notti che bastano a
+    // `cosaManca`. Trenta giorni coprono la cadenza più lunga con margine.
+    await notti.caricaIntervallo(
+      dataNotteIndietro(giornoEffettivo(oggi), 30),
+      notteInArrivo(giornoEffettivo(oggi)),
+    )
     // Apri il contesto di ieri notte se è rimasto del tutto vuoto (a qualsiasi ora).
     contestoRetroAperto.value = contestoVuoto(recPassata.value)
     notti.sottoscrivi()
@@ -244,6 +288,16 @@ onUnmounted(() => notti.disiscrivi())
       etichetta="Questa notte"
       :forza-editor="apriDettagli(dnPassata)"
       @salva="(p) => salva(dnPassata, p)"
+    />
+
+    <!-- UNA domanda alla volta: quella che manca da più tempo, rimandabile.
+         Sta qui, subito dopo l'esito e prima di tutto ciò che è facoltativo,
+         perché è breve e perché in fondo alla pagina non la vedrebbe nessuno. -->
+    <DomandaSingola
+      v-if="domanda"
+      :domanda="domanda"
+      @rispondi="rispondiDomanda"
+      @rinvia="rinviaDomanda"
     />
 
     <!-- Contesto di IERI NOTTE, se non compilato la sera prima (a qualsiasi ora) -->

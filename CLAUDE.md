@@ -43,6 +43,10 @@ raccolta, quindi si parte presto. La prima versione include tutto il flusso prog
   **più piccolo** si mostra quanto manca, non una percentuale. Niente p-value — su un
   diario riguardato ogni sera, confronti multipli e optional stopping fabbricano
   correlazioni a comando. "Netta" solo se l'intervallo sta tutto oltre i 10 punti.
+- **Una domanda alla volta** (Decisione 13): i campi della sez. 4 restavano vuoti perché
+  nessuna schermata li chiedeva, e aggiungerli al modulo della sera sarebbe stato il modo
+  sicuro di non ottenerli lo stesso. Si chiede un campo solo, quello più in ritardo sulla
+  propria cadenza, con il perché in una riga e un "non ora" che costa un tap.
 - **Dati strutturati** (toggle/scelte), non testo libero: veloci da inserire e analizzabili.
   Unica eccezione voluta: il campo `note` della sez. 5, che raccoglie l'imprevisto che
   nessun chip prevede. Non deve mai diventare il posto dove finiscono dati strutturabili.
