@@ -43,6 +43,13 @@ raccolta, quindi si parte presto. La prima versione include tutto il flusso prog
   **più piccolo** si mostra quanto manca, non una percentuale. Niente p-value — su un
   diario riguardato ogni sera, confronti multipli e optional stopping fabbricano
   correlazioni a comando. "Netta" solo se l'intervallo sta tutto oltre i 10 punti.
+- **La pancia si conta in giorni** (Decisione 14): `alvo` mescolava consistenza e
+  conteggio, e un conteggio campionato ogni 3 giorni perde proprio la frequenza che il
+  pediatra guarda per prima — l'intervallo del campione è la scala del fenomeno. Non si
+  chiede più spesso (una domanda a sera è un budget: la somma di 1/cadenza deve stare
+  sotto 1, e c'è un test che lo verifica): si cambia la domanda. `ultima_evacuazione`
+  ("quando l'ultima volta?") porta dentro la risposta i giorni non chiesti; `alvo` resta
+  per la sola consistenza. I valori vecchi si convertono **in lettura** (`domain/alvo.js`).
 - **Una domanda alla volta** (Decisione 13): i campi della sez. 4 restavano vuoti perché
   nessuna schermata li chiedeva, e aggiungerli al modulo della sera sarebbe stato il modo
   sicuro di non ottenerli lo stesso. Si chiede un campo solo, quello più in ritardo sulla

@@ -11,7 +11,10 @@ create type esito_notte        as enum ('asciutto', 'bagnato');
 create type gravita_notte      as enum ('piccola', 'media', 'zuppo');
 create type minzione_notturna  as enum ('nessuna', 'da_solo', 'accompagnato_svegliato');
 create type liquidi_quantita   as enum ('pochi', 'medi', 'molti');
+-- 'nessuna_evacuazione' resta nell'enum: non si offre piu' dalla v3 (Decisione 14),
+-- ma e' scritto in schede vecchie e i dati grezzi non si riscrivono.
 create type alvo_stato         as enum ('regolare', 'stitico', 'nessuna_evacuazione', 'diarrea');
+create type ultima_evacuazione as enum ('oggi', 'ieri', 'due_tre_giorni', 'oltre_tre_giorni', 'non_so');
 create type salute_stato       as enum ('sano', 'malato', 'sconosciuto');
 
 -- ----------------------------------------------------------------
@@ -85,6 +88,10 @@ create table night_records (
   cibi_sospetti      text[] not null default '{}',
 
   -- --- Contesto clinico (sez. 4) ---
+  -- Da quanto non evacua (v3, Decisione 14): la risposta copre anche i giorni
+  -- in cui la domanda non e' stata fatta, cosa che 'alvo' non sapeva fare.
+  ultima_evacuazione ultima_evacuazione,
+  -- Ora solo la CONSISTENZA delle feci: il conteggio sta nella colonna sopra.
   alvo             alvo_stato,
   sintomi_diurni   text[] not null default '{}',
   interventi       text[] not null default '{}',

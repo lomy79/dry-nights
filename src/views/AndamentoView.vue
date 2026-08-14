@@ -165,6 +165,7 @@ watch(scelta, carica)
         <section
           class="card"
           v-if="
+            righe('ultima_evacuazione', riep.ultimaEvacuazione).length ||
             righe('alvo', riep.alvo).length ||
             righe('sintomi_diurni', riep.sintomiDiurni).length ||
             righe('interventi', riep.interventi).length
@@ -172,8 +173,22 @@ watch(scelta, carica)
         >
           <h2 class="titolo-card">La giornata</h2>
           <p class="muted nota">Sono le domande che il pediatra farà per prime.</p>
+          <div
+            class="gruppo"
+            v-if="righe('ultima_evacuazione', riep.ultimaEvacuazione).length"
+          >
+            <span class="etichetta">Ultima evacuazione</span>
+            <ul class="conteggi">
+              <li
+                v-for="r in righe('ultima_evacuazione', riep.ultimaEvacuazione)"
+                :key="r.valore"
+              >
+                <span>{{ r.etichetta }}</span><b>{{ r.n }}</b>
+              </li>
+            </ul>
+          </div>
           <div class="gruppo" v-if="righe('alvo', riep.alvo).length">
-            <span class="etichetta">Alvo</span>
+            <span class="etichetta">Feci</span>
             <ul class="conteggi">
               <li v-for="r in righe('alvo', riep.alvo)" :key="r.valore">
                 <span>{{ r.etichetta }}</span><b>{{ r.n }}</b>

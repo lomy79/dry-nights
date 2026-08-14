@@ -17,7 +17,7 @@
  *  - PER NOTTE (gravità, minzione): descrivono QUELLA notte, si chiedono subito
  *    dopo l'esito e non hanno senso tre giorni dopo — la risposta sarebbe
  *    inventata, che è peggio del buco (Decisione 2).
- *  - LENTE (alvo, sintomi diurni, interventi): non cambiano ogni giorno.
+ *  - LENTE (pancia, sintomi diurni, interventi): non cambiano ogni giorno.
  *    Chiederle ogni sera è rumore, e il rumore insegna a ignorare. Hanno una
  *    cadenza, e si chiedono di SERA: la pancia di oggi la si sa a fine giornata,
  *    non alle otto del mattino.
@@ -27,17 +27,33 @@
 
 import { nottePassata, notteInArrivo, giornoEffettivo, giorniDaNotte } from './dataNotte.js'
 import { momentoDelGiorno } from './cosaManca.js'
-import { GRAVITA, MINZIONE, ALVO, SINTOMI_DIURNI, INTERVENTI } from './costanti.js'
+import {
+  GRAVITA,
+  MINZIONE,
+  ALVO_CONSISTENZA,
+  ULTIMA_EVACUAZIONE,
+  SINTOMI_DIURNI,
+  INTERVENTI,
+} from './costanti.js'
 
 /**
  * Ogni quanti giorni ha senso richiedere un campo lento.
- * L'alvo più spesso degli altri perché la stitichezza è la causa nascosta più
- * frequente (sez. 4) ed è l'unica delle tre che cambia davvero di giorno in
- * giorno; gli interventi quasi mai, perché una terapia o un allarme durano
- * settimane e richiederlo ogni tre giorni sarebbe solo un modo di farsi ignorare.
+ *
+ * La pancia più spesso delle altre, perché la stitichezza è la causa nascosta
+ * più frequente (sez. 4) ed è l'unica cosa qui che cambia di giorno in giorno;
+ * gli interventi quasi mai, perché una terapia o un allarme durano settimane e
+ * richiederli ogni tre giorni sarebbe solo un modo di farsi ignorare.
+ *
+ * Si chiede UNA domanda a sera, quindi la somma delle frequenze è un budget:
+ * 1/3 + 1/7 + 1/7 + 1/14 ≈ 0,69 a sera. Sopra 1 le cadenze diventerebbero
+ * bugie — la più fitta mangerebbe le altre, che non uscirebbero quasi mai.
+ * È anche il motivo per cui la pancia non si chiede ogni giorno pur cambiando
+ * ogni giorno: da lì viene la forma della domanda (Decisione 14), che copre i
+ * giorni non chiesti invece di campionarli.
  */
 export const CADENZA = {
-  alvo: 3,
+  ultima_evacuazione: 3,
+  alvo: 7,
   sintomi_diurni: 7,
   interventi: 14,
 }
@@ -70,12 +86,22 @@ const PER_NOTTE = [
 /** Le domande lente, in ordine di priorità a parità di ritardo. */
 const LENTE = [
   {
+    chiave: 'ultima_evacuazione',
+    campo: 'ultima_evacuazione',
+    tipo: 'singola',
+    opzioni: ULTIMA_EVACUAZIONE,
+    // Non "com'è andata oggi": quella domanda parla solo di oggi, e chiesta ogni
+    // tre sere perde esattamente i giorni che servirebbe contare (Decisione 14).
+    testo: 'Quando ha fatto la cacca l’ultima volta?',
+    nota: 'La stitichezza è una delle cause più frequenti dell’enuresi, ed è anche la più facile da non notare: quello che conta è ogni quanti giorni, non com’è andata oggi.',
+  },
+  {
     chiave: 'alvo',
     campo: 'alvo',
     tipo: 'singola',
-    opzioni: ALVO,
-    testo: 'Com’è andata la pancia oggi?',
-    nota: 'La stitichezza è una delle cause più frequenti dell’enuresi, ed è anche la più facile da non notare.',
+    opzioni: ALVO_CONSISTENZA,
+    testo: 'Le ultime feci, com’erano?',
+    nota: 'Feci dure fanno male e insegnano a trattenere: cambia la cura, non solo il numero dei giorni.',
   },
   {
     chiave: 'sintomi_diurni',

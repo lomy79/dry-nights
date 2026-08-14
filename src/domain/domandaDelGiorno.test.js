@@ -86,72 +86,83 @@ describe('prossimaDomanda — le domande sulla notte', () => {
 
 describe('prossimaDomanda — le domande lente', () => {
   const notteFatta = mappa([NOTTE_PASSATA, { esito: 'asciutto', minzione: 'nessuna' }])
+  const TUTTE_LENTE = {
+    ultima_evacuazione: 'oggi',
+    alvo: 'regolare',
+    sintomi_diurni: ['nessuno'],
+    interventi: ['nessuno'],
+  }
 
   it('di mattina non si chiedono: la giornata non è ancora successa', () => {
     expect(prossimaDomanda({ oggi: MATTINA, records: notteFatta })).toBeNull()
   })
 
-  it('mai risposte: si comincia dall’alvo', () => {
+  it('mai risposte: si comincia dalla pancia', () => {
     const d = prossimaDomanda({ oggi: SERA, records: notteFatta })
-    expect(d.chiave).toBe('alvo')
+    expect(d.chiave).toBe('ultima_evacuazione')
     // Si attacca alla notte IN ARRIVO: la giornata appena finita precede quella notte.
     expect(d.dataNotte).toBe(NOTTE_ARRIVO)
   })
 
-  it('risposto l’alvo, la sera dopo tocca ai sintomi diurni', () => {
-    const records = { ...notteFatta, ...mappa([NOTTE_ARRIVO, { alvo: 'regolare' }]) }
-    expect(prossimaDomanda({ oggi: SERA, records }).chiave).toBe('sintomi_diurni')
+  it('risposta la pancia, la sera dopo tocca alla consistenza', () => {
+    const records = {
+      ...notteFatta,
+      ...mappa([NOTTE_ARRIVO, { ultima_evacuazione: 'oggi' }]),
+    }
+    expect(prossimaDomanda({ oggi: SERA, records }).chiave).toBe('alvo')
   })
 
   it('tutte risposte oggi: silenzio', () => {
     const records = {
       ...notteFatta,
-      ...mappa([
-        NOTTE_ARRIVO,
-        { alvo: 'regolare', sintomi_diurni: ['nessuno'], interventi: ['nessuno'] },
-      ]),
+      ...mappa([NOTTE_ARRIVO, TUTTE_LENTE]),
     }
     expect(prossimaDomanda({ oggi: SERA, records })).toBeNull()
   })
 
-  it('l’alvo torna la TERZA sera dopo, non la quinta', () => {
+  it('la pancia torna la TERZA sera dopo, non la quinta', () => {
     // Cadenza 3 vuol dire tre giorni: rispondo la sera del 9, la domanda
     // ritorna la sera del 12. Contare dalla notte su cui è scritta la risposta,
     // e pretendere di superare la cadenza invece di raggiungerla, spostava il
     // ritorno di due sere: un campo chiesto la metà delle volte previste.
-    const lenteFatte = { sintomi_diurni: ['nessuno'], interventi: ['nessuno'] }
-    const sera = (giorno) => ({
-      ...notteFatta,
-      ...mappa([giorno, { alvo: 'regolare', ...lenteFatte }]),
-    })
+    const sera = (giorno) => ({ ...notteFatta, ...mappa([giorno, TUTTE_LENTE]) })
     expect(prossimaDomanda({ oggi: SERA, records: sera('2026-08-12') })).toBeNull() // sera dell'11
     expect(prossimaDomanda({ oggi: SERA, records: sera('2026-08-11') })).toBeNull() // sera del 10
-    expect(prossimaDomanda({ oggi: SERA, records: sera('2026-08-10') }).chiave).toBe('alvo')
+    expect(prossimaDomanda({ oggi: SERA, records: sera('2026-08-10') }).chiave).toBe(
+      'ultima_evacuazione',
+    )
   })
 
-  it('l’alvo torna dopo la sua cadenza, gli interventi no', () => {
-    const vecchio = '2026-08-08' // 4 giorni prima
-    const records = {
-      ...notteFatta,
-      ...mappa([vecchio, { alvo: 'regolare', sintomi_diurni: ['nessuno'], interventi: ['allarme'] }]),
-    }
-    expect(CADENZA.alvo).toBeLessThan(4)
+  it('la pancia si chiede più spesso della consistenza e degli interventi', () => {
+    // Quattro giorni dopo: solo il conteggio è già scaduto.
+    const records = { ...notteFatta, ...mappa(['2026-08-08', TUTTE_LENTE]) }
+    expect(CADENZA.ultima_evacuazione).toBeLessThan(4)
+    expect(CADENZA.alvo).toBeGreaterThan(4)
     expect(CADENZA.interventi).toBeGreaterThan(4)
-    expect(prossimaDomanda({ oggi: SERA, records }).chiave).toBe('alvo')
+    expect(prossimaDomanda({ oggi: SERA, records }).chiave).toBe('ultima_evacuazione')
+  })
+
+  it('una domanda a sera è un budget: le cadenze insieme devono starci', () => {
+    // Se la somma delle frequenze superasse 1, la più fitta mangerebbe le altre
+    // e le loro cadenze sarebbero promesse che l'app non può mantenere. È il
+    // motivo per cui la pancia non si chiede ogni giorno pur cambiando ogni
+    // giorno: da lì viene la forma della domanda (Decisione 14).
+    const perSera = Object.values(CADENZA).reduce((s, g) => s + 1 / g, 0)
+    expect(perSera).toBeLessThan(1)
   })
 
   it('a parità di ritardo vince l’ordine di priorità, non il caso', () => {
-    // Entrambi mai risposti: l'alvo è il più utile clinicamente e viene prima.
+    // Tutte mai risposte: il conteggio dei giorni è il più utile e viene prima.
     const records = notteFatta
-    expect(prossimaDomanda({ oggi: SERA, records }).chiave).toBe('alvo')
+    expect(prossimaDomanda({ oggi: SERA, records }).chiave).toBe('ultima_evacuazione')
   })
 
   it('vince il più in ritardo rispetto alla PROPRIA cadenza', () => {
     const records = {
       ...notteFatta,
       ...mappa(
-        ['2026-08-11', { alvo: 'regolare' }], // ieri: in regola (cadenza 3)
-        ['2026-07-13', { sintomi_diurni: ['urgenza'] }], // 30 giorni fa: 23 di ritardo
+        ['2026-08-11', { ultima_evacuazione: 'oggi', alvo: 'regolare' }], // ieri: in regola
+        ['2026-07-13', { sintomi_diurni: ['urgenza'] }], // 30 giorni fa: 24 di ritardo
         ['2026-08-10', { interventi: ['allarme'] }], // 2 giorni fa: in regola (cadenza 14)
       ),
     }
@@ -163,7 +174,10 @@ describe('prossimaDomanda — le domande lente', () => {
     // più di un aggiornamento vecchio.
     const records = {
       ...notteFatta,
-      ...mappa(['2026-07-13', { sintomi_diurni: ['urgenza'], alvo: 'regolare' }]),
+      ...mappa([
+        '2026-07-13',
+        { sintomi_diurni: ['urgenza'], alvo: 'regolare', ultima_evacuazione: 'oggi' },
+      ]),
     }
     expect(prossimaDomanda({ oggi: SERA, records }).chiave).toBe('interventi')
   })

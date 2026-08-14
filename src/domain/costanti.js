@@ -9,8 +9,10 @@
  * I `label` sono per la UI (italiano) e non toccano il DB.
  */
 
-// v2: bevande correlate alla fascia oraria (campo `liquidi` come mappa fascia->tipi).
-export const SCHEMA_VERSION = 2
+// v3: `ultima_evacuazione` — la domanda sulla pancia porta dentro di sé i giorni
+// che non le sono stati chiesti (Decisione 14). v2: bevande correlate alla fascia
+// oraria (campo `liquidi` come mappa fascia->tipi).
+export const SCHEMA_VERSION = 3
 
 // Chi ha inserito il dato (campo concettuale del modello dati, sez. 1).
 export const INSERITO_DA = [
@@ -88,12 +90,36 @@ export const CIBI_SOSPETTI = [
 ]
 
 // --- Contesto clinico (sez. 4) ---
+/**
+ * Da quanto non evacua (Decisione 14). È la domanda che porta dentro di sé i
+ * giorni in cui non è stata fatta: chiedendola ogni tre sere si ricostruisce
+ * comunque la frequenza, che è ciò che il pediatra guarda per primo.
+ * Le fasce non si sovrappongono e coprono tutto: nessuna risposta è "quasi".
+ */
+export const ULTIMA_EVACUAZIONE = [
+  { value: 'oggi', label: 'Oggi' },
+  { value: 'ieri', label: 'Ieri' },
+  { value: 'due_tre_giorni', label: '2-3 giorni fa' },
+  { value: 'oltre_tre_giorni', label: 'Più di 3 giorni fa' },
+  { value: 'non_so', label: 'Non so' },
+]
+
+/**
+ * Com'erano le feci. Tutti e quattro i valori restano legali nel database —
+ * `nessuna_evacuazione` è scritto in schede vecchie e non si riscrive mai (i
+ * dati grezzi non si toccano) — ma la UI ne offre solo tre: da quanto non
+ * evacua ora lo chiede `ULTIMA_EVACUAZIONE`, che sa contare i giorni.
+ * Vedi ALVO_CONSISTENZA per ciò che si può ancora scegliere.
+ */
 export const ALVO = [
   { value: 'regolare', label: 'Regolare' },
   { value: 'stitico', label: 'Stitico / feci dure' },
   { value: 'nessuna_evacuazione', label: 'Nessuna evacuazione' },
   { value: 'diarrea', label: 'Diarrea' },
 ]
+
+/** Le scelte ancora offerte per `alvo`: solo la consistenza, non il conteggio. */
+export const ALVO_CONSISTENZA = ALVO.filter((o) => o.value !== 'nessuna_evacuazione')
 
 export const SINTOMI_DIURNI = [
   { value: 'urgenza', label: 'Urgenza' },
@@ -150,7 +176,10 @@ export const VALORI_AMMESSI = {
   liquidi_voce: LIQUIDI_VOCI.map((o) => o.value),
   liquidi_orario: LIQUIDI_ORARIO.map((o) => o.value),
   cibi_sospetti: CIBI_SOSPETTI.map((o) => o.value),
+  // Tutti e quattro: `nessuna_evacuazione` non si offre piu' (Decisione 14) ma
+  // resta legale, perche' le schede che ce l'hanno non si riscrivono.
   alvo: ALVO.map((o) => o.value),
+  ultima_evacuazione: ULTIMA_EVACUAZIONE.map((o) => o.value),
   sintomi_diurni: SINTOMI_DIURNI.map((o) => o.value),
   interventi: INTERVENTI.map((o) => o.value),
   salute_stato: SALUTE_STATO.map((o) => o.value),
@@ -170,6 +199,7 @@ export const OPZIONI = {
   liquidi_orario: LIQUIDI_ORARIO,
   cibi_sospetti: CIBI_SOSPETTI,
   alvo: ALVO,
+  ultima_evacuazione: ULTIMA_EVACUAZIONE,
   sintomi_diurni: SINTOMI_DIURNI,
   interventi: INTERVENTI,
   salute_stato: SALUTE_STATO,

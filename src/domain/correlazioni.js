@@ -16,6 +16,7 @@
  */
 
 import { statoFascia } from './liquidi.js'
+import { esposizioneSenzaEvacuazione } from './alvo.js'
 import { nottiDelPeriodo, quota } from './statistiche.js'
 
 /**
@@ -130,8 +131,16 @@ export const FATTORI = [
     esposizione: (r) => (r.pipi_prima_dormire == null ? null : r.pipi_prima_dormire === false),
   },
   {
+    chiave: 'senza_evacuazione',
+    etichetta: 'Più di 3 giorni senza evacuare',
+    // Il segnale di stitichezza più oggettivo che abbiamo: sono giorni contati,
+    // non un'impressione. E `ultima_evacuazione` è la domanda che si fa più
+    // spesso (Decisione 14), quindi è anche quella che riempirà i gruppi prima.
+    esposizione: esposizioneSenzaEvacuazione,
+  },
+  {
     chiave: 'alvo_stitico',
-    etichetta: 'Giornata con stitichezza',
+    etichetta: 'Feci dure',
     // Solo 'stitico' vs 'regolare': 'nessuna_evacuazione' e 'diarrea' non sono
     // né l'uno né l'altro, e forzarli in un gruppo inventerebbe un dato.
     esposizione: (r) => {

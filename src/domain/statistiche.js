@@ -16,6 +16,7 @@
 
 import { parseISO, addDays, differenceInCalendarDays } from 'date-fns'
 import { toDataNotte } from './dataNotte.js'
+import { ultimaEvacuazione as ultimaEvacuazioneDi } from './alvo.js'
 
 /** Ampiezza del raggruppamento temporale: la settimana è l'unità in cui si ragiona. */
 export const GIORNI_SETTIMANA = 7
@@ -107,6 +108,7 @@ export function riepilogo(records, { da, a }) {
   const gravita = {}
   const minzione = {}
   const alvo = {}
+  const ultimaEvacuazione = {}
   const sintomiDiurni = {}
   const interventi = {}
   const salute = {}
@@ -121,6 +123,8 @@ export function riepilogo(records, { da, a }) {
     if (r.esito === 'bagnato') conta(gravita, r.gravita)
     conta(minzione, r.minzione)
     conta(alvo, r.alvo)
+    // Legge anche le schede pre-v3: un alvo di consistenza implica 'oggi'.
+    conta(ultimaEvacuazione, ultimaEvacuazioneDi(r))
     contaMulti(sintomiDiurni, r.sintomi_diurni)
     contaMulti(interventi, r.interventi)
     conta(salute, r.salute_stato)
@@ -146,6 +150,7 @@ export function riepilogo(records, { da, a }) {
     gravita,
     minzione,
     alvo,
+    ultimaEvacuazione,
     sintomiDiurni,
     interventi,
     salute,

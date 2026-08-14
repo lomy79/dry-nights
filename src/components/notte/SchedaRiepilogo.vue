@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { etichettaValore, etichetteValori } from '@/domain/costanti'
 import { riassuntoLiquidi } from '@/domain/liquidi'
+import { consistenzaAlvo, etichettaUltimaEvacuazione } from '@/domain/alvo'
 
 // Dettaglio in sola lettura di una scheda notte: mostra solo i campi valorizzati.
 const props = defineProps({
@@ -57,7 +58,8 @@ const sezioni = computed(() => {
     {
       titolo: 'La giornata',
       righe: [
-        riga('Alvo', etichettaValore('alvo', r.alvo)),
+        riga('Ultima evacuazione', etichettaUltimaEvacuazione(r)),
+        riga('Feci', etichettaValore('alvo', consistenzaAlvo(r))),
         riga('Sintomi diurni', etichetteValori('sintomi_diurni', r.sintomi_diurni)),
         riga('Interventi', etichetteValori('interventi', r.interventi)),
         riga('Salute', etichettaValore('salute_stato', r.salute_stato)),

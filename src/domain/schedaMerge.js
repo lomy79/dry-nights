@@ -53,7 +53,7 @@ export function normalizzaEsito(patch) {
 const CAMPI_SCHEDA = [
   'esito', 'gravita', 'episodi', 'minzione', 'numero_risvegli',
   'pipi_prima_dormire', 'liquidi_quantita', 'liquidi_tipo', 'liquidi_orario',
-  'cibi_sospetti', 'alvo', 'sintomi_diurni', 'interventi',
+  'cibi_sospetti', 'alvo', 'ultima_evacuazione', 'sintomi_diurni', 'interventi',
   'salute_stato', 'salute_sintomi', 'note', 'umore_bambino',
 ]
 
