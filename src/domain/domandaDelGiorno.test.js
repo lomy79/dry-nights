@@ -29,7 +29,14 @@ describe('giorniDallUltimaRisposta', () => {
 
   it('"nessuno" invece è una risposta a tutti gli effetti', () => {
     const r = mappa(['2026-08-11', { sintomi_diurni: ['nessuno'] }])
-    expect(giorniDallUltimaRisposta(r, 'sintomi_diurni', '2026-08-12')).toBe(1)
+    // Scritta sulla notte dell'11, cioè rispondendo la sera del 10: due giorni fa.
+    expect(giorniDallUltimaRisposta(r, 'sintomi_diurni', '2026-08-12')).toBe(2)
+  })
+
+  it('la risposta di stasera vale zero giorni, non uno', () => {
+    // Si scrive sulla notte in arrivo, ma parla della giornata che sta finendo.
+    const r = mappa(['2026-08-13', { alvo: 'regolare' }])
+    expect(giorniDallUltimaRisposta(r, 'alvo', '2026-08-12')).toBe(0)
   })
 
   it('prende la risposta più recente e ignora il futuro', () => {
@@ -38,7 +45,7 @@ describe('giorniDallUltimaRisposta', () => {
       ['2026-08-10', { alvo: 'stitico' }],
       ['2026-08-20', { alvo: 'regolare' }], // notte futura: non conta
     )
-    expect(giorniDallUltimaRisposta(r, 'alvo', '2026-08-12')).toBe(2)
+    expect(giorniDallUltimaRisposta(r, 'alvo', '2026-08-12')).toBe(3)
   })
 })
 
@@ -105,6 +112,21 @@ describe('prossimaDomanda — le domande lente', () => {
       ]),
     }
     expect(prossimaDomanda({ oggi: SERA, records })).toBeNull()
+  })
+
+  it('l’alvo torna la TERZA sera dopo, non la quinta', () => {
+    // Cadenza 3 vuol dire tre giorni: rispondo la sera del 9, la domanda
+    // ritorna la sera del 12. Contare dalla notte su cui è scritta la risposta,
+    // e pretendere di superare la cadenza invece di raggiungerla, spostava il
+    // ritorno di due sere: un campo chiesto la metà delle volte previste.
+    const lenteFatte = { sintomi_diurni: ['nessuno'], interventi: ['nessuno'] }
+    const sera = (giorno) => ({
+      ...notteFatta,
+      ...mappa([giorno, { alvo: 'regolare', ...lenteFatte }]),
+    })
+    expect(prossimaDomanda({ oggi: SERA, records: sera('2026-08-12') })).toBeNull() // sera dell'11
+    expect(prossimaDomanda({ oggi: SERA, records: sera('2026-08-11') })).toBeNull() // sera del 10
+    expect(prossimaDomanda({ oggi: SERA, records: sera('2026-08-10') }).chiave).toBe('alvo')
   })
 
   it('l’alvo torna dopo la sua cadenza, gli interventi no', () => {

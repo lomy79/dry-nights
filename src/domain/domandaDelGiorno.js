@@ -111,13 +111,18 @@ function valorizzato(record, campo) {
  * verrebbe contata, e la stessa domanda tornerebbe ogni sera per sempre — cioè
  * esattamente l'insistenza che questo modulo esiste per evitare. Le notti
  * ancora più avanti restano fuori: quelle sì sono futuro.
+ *
+ * Per lo stesso motivo si conta dal GIORNO della risposta, non dalla notte su
+ * cui è scritta: "com'è andata la pancia oggi?" chiesto la sera del 12 finisce
+ * sulla notte del 13, ma parla del 12. Contare dalla notte rende ogni risposta
+ * un giorno più giovane di quanto sia e ritarda di altrettanto il suo ritorno.
  */
 export function giorniDallUltimaRisposta(records, campo, giorno) {
   const limite = notteInArrivo(giorno)
   let migliore = Infinity
   for (const [dn, rec] of Object.entries(records ?? {})) {
     if (dn > limite || !valorizzato(rec, campo)) continue
-    const d = Math.max(0, giorniDaNotte(dn, giorno))
+    const d = giorniDaNotte(dn, giorno) + 1
     if (d < migliore) migliore = d
   }
   return migliore
@@ -164,12 +169,15 @@ export function prossimaDomanda({ oggi, momento, records = {}, rinviate = {} } =
   if (mom !== 'sera') return null
 
   let scelta = null
-  let peggiore = 0
+  // `-Infinity` e non 0: la cadenza è scaduta quando i giorni la RAGGIUNGONO,
+  // non quando la superano. Con `ritardo > 0` una cadenza di 3 chiedeva il
+  // quarto giorno, e il "vince il più in ritardo" perdeva i pareggi a zero.
+  let peggiore = -Infinity
   for (const d of LENTE) {
     if (rinviata(rinviate, d.chiave, giorno)) continue
     const da = giorniDallUltimaRisposta(records, d.campo, giorno)
     const ritardo = da - CADENZA[d.chiave]
-    if (ritardo <= 0) continue
+    if (ritardo < 0) continue
     if (ritardo > peggiore) {
       peggiore = ritardo
       scelta = d
