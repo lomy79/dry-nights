@@ -71,6 +71,11 @@ raccolta, quindi si parte presto. La prima versione include tutto il flusso prog
 - **"Sera" inizia alle 21** (`CUTOFF_SERA_ORA`), non nel pomeriggio: prima di quell'ora
   chiedere il contesto di stanotte significa farlo inventare, la cena non c'è ancora stata.
   Il pomeriggio resta la coda della mattina (l'esito della notte passata è ancora aperto).
+- **In una PWA "la sessione" dura giorni**: la schermata fissa l'istante all'apertura (le
+  card non devono muoversi sotto le dita), ma va rifatta al rientro in primo piano se nel
+  frattempo è cambiato il giorno o il momento (`cambiamenti()`), altrimenti un'app aperta
+  la mattina e riaperta alle 22 resta convinta che sia mattina e la domanda della sera non
+  arriva mai. Solo quei due cambi: tornare da un'altra app dopo dieci secondi non ridisegna.
 
 ## Guardrail tecnici
 - Ogni record ha `schema_version`, timestamp e `created_by`/`updated_by`: non rimuoverli.

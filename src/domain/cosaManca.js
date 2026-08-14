@@ -47,6 +47,28 @@ export function momentoDelGiorno(oggi, cutoff = CUTOFF_SERA_ORA) {
   return 'mattina'
 }
 
+/**
+ * Cosa è cambiato fra due istanti, ai fini di COSA si chiede.
+ *
+ * Serve a una PWA, dove "la sessione" può durare giorni: la schermata fissa
+ * l'istante all'apertura — le card non devono muoversi sotto le dita — ma
+ * lasciata in background dal mattino e riaperta alle 22 continuerebbe a credere
+ * che sia mattina, e la domanda della sera non arriverebbe mai. Si ricalcola
+ * solo se una di queste due cose è cambiata: sono le uniche da cui dipende la
+ * schermata, e passare a un'altra app per dieci secondi non deve ridisegnare
+ * niente.
+ *
+ * Restituisce i due cambi separati perché non valgono uguale: un giorno nuovo è
+ * una notte nuova (e notti nuove da caricare), un momento nuovo è solo un'altra
+ * domanda sulla stessa giornata.
+ */
+export function cambiamenti(prima, adesso) {
+  return {
+    giorno: giornoEffettivo(prima) !== giornoEffettivo(adesso),
+    momento: momentoDelGiorno(prima) !== momentoDelGiorno(adesso),
+  }
+}
+
 function esitoMancante(record) {
   return !record || record.esito == null
 }

@@ -3,6 +3,7 @@ import {
   cosaManca,
   momentoDelGiorno,
   dateNottiRilevanti,
+  cambiamenti,
 } from './cosaManca.js'
 
 // Riferimento: 12 luglio 2026.
@@ -183,5 +184,53 @@ describe('dateNottiRilevanti', () => {
     expect(date).toEqual(
       expect.arrayContaining(['2026-07-13', '2026-07-12', '2026-07-11', '2026-07-10']),
     )
+  })
+})
+
+describe('cambiamenti — quando la schermata di una PWA va rifatta', () => {
+  const alle = (giorno, ora, minuti = 0) => new Date(2026, 6, giorno, ora, minuti)
+
+  it('pochi secondi dopo: niente da rifare', () => {
+    expect(cambiamenti(alle(12, 8), alle(12, 8, 30))).toEqual({
+      giorno: false,
+      momento: false,
+    })
+  })
+
+  it('tutto il pomeriggio resta la coda della mattina', () => {
+    // Il caso che invitava a rinfrescare a ogni ritorno: non cambia niente.
+    expect(cambiamenti(alle(12, 8), alle(12, 20, 59))).toEqual({
+      giorno: false,
+      momento: false,
+    })
+  })
+
+  it('aperta di mattina, riaperta dopo le 21: è il caso che serviva', () => {
+    // Senza questo la domanda della sera non arrivava mai, e nulla lo diceva.
+    expect(cambiamenti(alle(12, 8), alle(12, 21))).toEqual({
+      giorno: false,
+      momento: true,
+    })
+  })
+
+  it('alle 2 di notte si è ancora nella stessa sera, non in un giorno nuovo', () => {
+    expect(cambiamenti(alle(12, 22), alle(13, 2))).toEqual({
+      giorno: false,
+      momento: false,
+    })
+  })
+
+  it('dalla sera al mattino dopo cambiano entrambi', () => {
+    expect(cambiamenti(alle(12, 22), alle(13, 8))).toEqual({
+      giorno: true,
+      momento: true,
+    })
+  })
+
+  it('lasciata aperta un giorno intero: giorno nuovo, stesso momento', () => {
+    expect(cambiamenti(alle(12, 8), alle(13, 8))).toEqual({
+      giorno: true,
+      momento: false,
+    })
   })
 })

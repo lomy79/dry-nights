@@ -7,7 +7,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useBambinoStore } from '@/stores/bambino'
 import { useNottiStore } from '@/stores/notti'
 import { useNotificheStore } from '@/stores/notifiche'
-import { cosaManca, dateNottiRilevanti } from '@/domain/cosaManca'
+import { cosaManca, dateNottiRilevanti, cambiamenti } from '@/domain/cosaManca'
 import { prossimaDomanda } from '@/domain/domandaDelGiorno'
 import { leggiDeepLinkEsito } from '@/domain/promemoria'
 import {
@@ -33,10 +33,15 @@ const bambino = useBambinoStore()
 const notti = useNottiStore()
 const notifiche = useNotificheStore()
 
-// `oggi` stabile per la sessione: momento e date-notte non cambiano sotto i piedi.
+// `oggi` non è fisso: è una FOTOGRAFIA, rifatta solo quando l'app torna in primo
+// piano e solo se nel frattempo è cambiato il giorno o il momento. Dentro una
+// schermata aperta resta immobile — le card non devono muoversi sotto le dita —
+// ma una PWA lasciata in background dal mattino e riaperta alle 22 non può
+// continuare a credere che sia mattina: è così che la domanda della sera non
+// arrivava mai, senza che niente lo facesse capire.
 // dnPassata usa il giorno effettivo (prima delle 5 = notte precedente).
-const oggi = new Date()
-const dnPassata = nottePassata(giornoEffettivo(oggi))
+const oggi = ref(new Date())
+const dnPassata = computed(() => nottePassata(giornoEffettivo(oggi.value)))
 const errore = ref('')
 const copiato = ref(false)
 
@@ -44,7 +49,7 @@ const copiato = ref(false)
 // può scrivere sul database (non ha la sessione), quindi passa l'esito nell'URL
 // e lo salviamo qui. Letto SUBITO, in modo sincrono: le card devono già sapere,
 // al primo render, se restare aperte sui dettagli.
-const daNotifica = leggiDeepLinkEsito(route.query, oggi)
+const daNotifica = leggiDeepLinkEsito(route.query, oggi.value)
 const confermaNotifica = ref('')
 
 // Solo il "bagnato" tiene la card aperta: ha dei dettagli da offrire.
@@ -82,13 +87,13 @@ function nascondiInvito() {
 
 const manca = computed(() =>
   cosaManca({
-    oggi,
+    oggi: oggi.value,
     records: notti.perData,
     statoSalute: bambino.statoAttivo,
   }),
 )
 
-const recPassata = computed(() => notti.record(dnPassata))
+const recPassata = computed(() => notti.record(dnPassata.value))
 
 // --- Una domanda alla volta (sez. 4: i campi che il pediatra chiede per primi) ---
 //
@@ -103,7 +108,7 @@ function chiaveRinvii() {
 }
 
 const domanda = computed(() =>
-  prossimaDomanda({ oggi, records: notti.perData, rinviate: rinviate.value }),
+  prossimaDomanda({ oggi: oggi.value, records: notti.perData, rinviate: rinviate.value }),
 )
 
 async function rispondiDomanda({ campo, valore }) {
@@ -111,7 +116,7 @@ async function rispondiDomanda({ campo, valore }) {
 }
 
 function rinviaDomanda(chiave) {
-  rinviate.value = { ...rinviate.value, [chiave]: giornoEffettivo(oggi) }
+  rinviate.value = { ...rinviate.value, [chiave]: giornoEffettivo(oggi.value) }
   localStorage.setItem(chiaveRinvii(), JSON.stringify(rinviate.value))
 }
 
@@ -125,7 +130,7 @@ const cardEsiti = computed(() => {
   const lista = [...manca.value.recuperi]
   if (!daNotifica) return lista
   const giàInLista = lista.some((r) => r.dataNotte === daNotifica.dataNotte)
-  const giàInCima = manca.value.momento === 'mattina' && daNotifica.dataNotte === dnPassata
+  const giàInCima = manca.value.momento === 'mattina' && daNotifica.dataNotte === dnPassata.value
   if (!giàInLista && !giàInCima) {
     lista.unshift({
       dataNotte: daNotifica.dataNotte,
@@ -134,10 +139,10 @@ const cardEsiti = computed(() => {
   }
   return lista
 })
-const saluteEffettiva = computed(() => statoSaluteEffettivo(bambino.statoAttivo, oggi))
+const saluteEffettiva = computed(() => statoSaluteEffettivo(bambino.statoAttivo, oggi.value))
 
 function etichettaNotte(dn) {
-  if (dn === dnPassata) return 'questa notte'
+  if (dn === dnPassata.value) return 'questa notte'
   return `la notte di ${format(parseISO(dn), 'EEEE d MMMM', { locale: it })}`
 }
 function capitalizza(s) {
@@ -159,7 +164,7 @@ async function confermaSalute(payload) {
   errore.value = ''
   try {
     // giorniFa: 0 = oggi; >0 = rientro a sano retroattivo ("da martedì").
-    const daData = dataNotteIndietro(oggi, payload.giorniFa ?? 0)
+    const daData = dataNotteIndietro(oggi.value, payload.giorniFa ?? 0)
     const rientroSano = payload.stato === 'sano' && eraMalato.value
     await bambino.impostaSalute({
       stato: payload.stato,
@@ -193,7 +198,47 @@ async function esci() {
   router.replace({ name: 'login' })
 }
 
+async function caricaNotti() {
+  await notti.caricaDate(dateNottiRilevanti(oggi.value))
+  // Le domande lente hanno una cadenza fino a due settimane: per sapere se una
+  // risposta c'è già serve più storia delle quattro notti che bastano a
+  // `cosaManca`. Trenta giorni coprono la cadenza più lunga con margine.
+  await notti.caricaIntervallo(
+    dataNotteIndietro(giornoEffettivo(oggi.value), 30),
+    notteInArrivo(giornoEffettivo(oggi.value)),
+  )
+}
+
+/**
+ * L'app è tornata in primo piano: la fotografia `oggi` potrebbe essere vecchia.
+ *
+ * Si rifà solo se è cambiato il giorno o il momento. Passare da un'altra app e
+ * tornare indietro dopo dieci secondi non deve ridisegnare niente: il motivo per
+ * cui `oggi` era fisso resta valido, cambia solo il fatto che "la sessione" di
+ * una PWA può durare giorni. Al cambio di giorno cambiano anche le notti
+ * rilevanti, quindi si ricarica prima di ridisegnare.
+ */
+async function rinfrescaMomento() {
+  if (document.visibilityState !== 'visible') return
+  const adesso = new Date()
+  const { giorno: giornoNuovo, momento: momentoNuovo } = cambiamenti(oggi.value, adesso)
+  if (!giornoNuovo && !momentoNuovo) return
+
+  oggi.value = adesso
+  try {
+    await caricaNotti()
+  } catch (e) {
+    errore.value = e?.message ?? 'Errore nel caricamento.'
+    return
+  }
+  // Solo al cambio di giorno: è una notte nuova, e la domanda è nuova con lei.
+  // Al solo passaggio a "sera" no, o un contesto chiuso con "Fatto" si
+  // riaprirebbe in mano a chi l'aveva appena chiuso.
+  if (giornoNuovo) contestoRetroAperto.value = contestoVuoto(recPassata.value)
+}
+
 onMounted(async () => {
+  document.addEventListener('visibilitychange', rinfrescaMomento)
   try {
     await bambino.caricaStato()
     await bambino.caricaMembri()
@@ -203,14 +248,7 @@ onMounted(async () => {
     } catch {
       rinviate.value = {} // storage sporco: si riparte, non si rompe la schermata
     }
-    await notti.caricaDate(dateNottiRilevanti(oggi))
-    // Le domande lente hanno una cadenza fino a due settimane: per sapere se una
-    // risposta c'è già serve più storia delle quattro notti che bastano a
-    // `cosaManca`. Trenta giorni coprono la cadenza più lunga con margine.
-    await notti.caricaIntervallo(
-      dataNotteIndietro(giornoEffettivo(oggi), 30),
-      notteInArrivo(giornoEffettivo(oggi)),
-    )
+    await caricaNotti()
     // Apri il contesto di ieri notte se è rimasto del tutto vuoto (a qualsiasi ora).
     contestoRetroAperto.value = contestoVuoto(recPassata.value)
     notti.sottoscrivi()
@@ -234,7 +272,10 @@ onMounted(async () => {
   }
 })
 
-onUnmounted(() => notti.disiscrivi())
+onUnmounted(() => {
+  document.removeEventListener('visibilitychange', rinfrescaMomento)
+  notti.disiscrivi()
+})
 </script>
 
 <template>
