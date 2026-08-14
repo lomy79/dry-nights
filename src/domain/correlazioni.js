@@ -221,7 +221,16 @@ export function valutaFattore(records, fattore, periodo) {
     senza,
     usate: con.n + senza.n,
     gruppoScarso: con.n <= senza.n ? 'con' : 'senza',
-    mancanti: Math.max(0, MIN_PER_GRUPPO - minore),
+    // Quanto manca a OGNI gruppo, e il totale.
+    //
+    // `mancanti` era la distanza del solo gruppo scarso, e con entrambi i gruppi
+    // vuoti diceva "ne mancano 10" quando le notti da raccogliere erano venti:
+    // dieci in cui il fattore c'è e dieci in cui non c'è. Prometteva metà strada.
+    // Sballava anche la gara del "più vicino": 9 e 0 (undici notti alla meta)
+    // batteva 5 e 5 (dieci), perché guardava solo la metà più magra.
+    mancaCon: Math.max(0, MIN_PER_GRUPPO - con.n),
+    mancaSenza: Math.max(0, MIN_PER_GRUPPO - senza.n),
+    mancanti: Math.max(0, MIN_PER_GRUPPO - con.n) + Math.max(0, MIN_PER_GRUPPO - senza.n),
     soglia: MIN_PER_GRUPPO,
   }
 

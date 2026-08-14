@@ -20,12 +20,28 @@ const avanzamento = computed(() => {
   return Math.min(1, minore / v.value.soglia)
 })
 
-/** Il gruppo che frena, detto com'è: "senza" è la metà che di solito manca. */
-const cosaManca = computed(() =>
-  v.value.gruppoScarso === 'con'
-    ? `notti in cui succede`
-    : `notti in cui NON succede`,
-)
+/**
+ * Cosa manca, detto per esteso e per ciascuno dei due gruppi.
+ *
+ * Prima diceva "mancano 10 notti fra le notti in cui succede", che si legge come
+ * "dieci notti mancano all'appello fra quelle in cui succede" — un conteggio
+ * dentro un gruppo, non notti ancora da vivere. E quando i gruppi erano vuoti
+ * tutti e due nominava solo il più scarso, quindi prometteva metà del lavoro.
+ *
+ * Quando mancano entrambe si nominano entrambe nella stessa frase: è il caso di
+ * partenza, e chi legge deve sapere subito che riempire una metà sola non basta.
+ */
+const cheCosaManca = computed(() => {
+  const { mancaCon, mancaSenza } = v.value
+  const n = (q) => (q === 1 ? '1 notte' : `${q} notti`)
+
+  if (mancaCon > 0 && mancaSenza > 0) {
+    return `mancano ${n(mancaCon)} in cui succede e ${n(mancaSenza)} in cui non succede`
+  }
+  const solo = mancaCon > 0 ? mancaCon : mancaSenza
+  const quando = mancaCon > 0 ? 'in cui succede' : 'in cui non succede'
+  return `${solo === 1 ? 'manca' : 'mancano'} ${n(solo)} ${quando}`
+})
 
 const intervallo = (i) => (i ? `${percento(i.basso)}–${percento(i.alto)}` : '—')
 </script>
@@ -36,15 +52,20 @@ const intervallo = (i) => (i ? `${percento(i.basso)}–${percento(i.alto)}` : '�
 
     <!-- 1. Raccolta: niente percentuali, solo la distanza dalla soglia. -->
     <template v-if="v.stato === 'raccolta'">
-      <p class="conteggi muted">
-        {{ nottiConta(v.con.n) }} in cui succede · {{ nottiConta(v.senza.n) }} in cui no
-      </p>
+      <!-- Due righe parallele, non una frase con dentro due numeri: qui si legge
+           di sfuggita, e "0 notti in cui succede · 0 notti in cui no" costringeva
+           a rileggere per capire quale zero fosse quale. -->
+      <dl class="conteggi muted">
+        <div><dt>Succede</dt><dd>{{ nottiConta(v.con.n) }}</dd></div>
+        <div><dt>Non succede</dt><dd>{{ nottiConta(v.senza.n) }}</dd></div>
+      </dl>
       <div class="barra" role="img" :aria-label="`avanzamento ${Math.round(avanzamento * 100)}%`">
         <span :style="{ width: `${avanzamento * 100}%` }" />
       </div>
       <p class="muted spiega">
-        Servono almeno {{ v.soglia }} notti per parte: mancano
-        <strong>{{ nottiConta(v.mancanti) }}</strong> fra le {{ cosaManca }}.
+        Per confrontarle servono {{ v.soglia }} notti per gruppo, perché il confronto
+        ha bisogno di tutte e due le metà: <strong>{{ cheCosaManca }}</strong
+        >.
       </p>
     </template>
 
@@ -98,6 +119,20 @@ const intervallo = (i) => (i ? `${percento(i.basso)}–${percento(i.alto)}` : '�
 .conteggi {
   margin: 0 0 0.45rem;
   font-size: 0.88rem;
+  display: grid;
+  gap: 0.1rem 1rem;
+}
+.conteggi > div {
+  display: flex;
+  justify-content: space-between;
+  max-width: 16rem;
+}
+.conteggi dt,
+.conteggi dd {
+  margin: 0;
+}
+.conteggi dd {
+  font-variant-numeric: tabular-nums;
 }
 /* Il contatore è l'unica cosa che si muove ogni settimana: è il motivo per cui
    vale la pena compilare anche stasera. */

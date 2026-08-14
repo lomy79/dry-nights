@@ -226,7 +226,7 @@ watch(scelta, carica)
              vicino" non indicherebbe niente: la riga compare quando c'è una gara. -->
         <p v-if="vicino && vicino.usate > 0" class="muted nota">
           Il più vicino è <strong>{{ vicino.etichetta.toLowerCase() }}</strong
-          >: mancano {{ nottiConta(vicino.mancanti) }}.
+          >: mancano {{ nottiConta(vicino.mancanti) }} in tutto, contando le due metà.
           <template v-if="inRaccolta > 1">
             Gli altri {{ inRaccolta - 1 }} sono più indietro.
           </template>

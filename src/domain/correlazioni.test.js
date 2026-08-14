@@ -124,10 +124,15 @@ describe('nottiUtilizzabili', () => {
 })
 
 describe('valutaFattore — la soglia', () => {
-  it('senza dati è in raccolta e mancano tutte le notti', () => {
+  it('senza dati mancano DUE gruppi pieni, non uno', () => {
+    // Il conto che l'app mostrava a chi comincia: diceva dieci, ma le notti da
+    // raccogliere erano venti — dieci col fattore e dieci senza. Prometteva
+    // metà strada, e la barra si sarebbe fermata a meta' senza spiegare perche'.
     const v = valutaFattore([], FATTORE_X, PERIODO)
     expect(v.stato).toBe('raccolta')
-    expect(v.mancanti).toBe(MIN_PER_GRUPPO)
+    expect(v.mancaCon).toBe(MIN_PER_GRUPPO)
+    expect(v.mancaSenza).toBe(MIN_PER_GRUPPO)
+    expect(v.mancanti).toBe(2 * MIN_PER_GRUPPO)
     expect(v.differenza).toBeNull()
   })
 
@@ -137,6 +142,7 @@ describe('valutaFattore — la soglia', () => {
     const v = valutaFattore(notti(30, { x: true }), FATTORE_X, PERIODO)
     expect(v.stato).toBe('raccolta')
     expect(v.gruppoScarso).toBe('senza')
+    expect(v.mancaCon).toBe(0) // di notti esposte ce n'e' d'avanzo
     expect(v.mancanti).toBe(MIN_PER_GRUPPO)
   })
 
@@ -270,7 +276,15 @@ describe('valutaFattori e fattorePiuVicino', () => {
     ]
     const vicino = fattorePiuVicino(valutaFattori(records, PERIODO))
     expect(vicino.chiave).toBe('bevande_dopo_cena')
-    expect(vicino.mancanti).toBe(2) // il gruppo scarso è 8, ne servono 10
+    expect(vicino.mancanti).toBe(3) // 2 dal gruppo da 8, 1 da quello da 9
+  })
+
+  it('"più vicino" è chi ha meno notti da raccogliere in tutto', () => {
+    // 9 e 0 sembra a una notte dalla meta' se si guarda solo il gruppo magro,
+    // ma ne servono 11; 5 e 5 ne servono 10 ed e' davvero il piu' vicino.
+    const quasi = { stato: 'raccolta', chiave: 'quasi', mancaCon: 1, mancaSenza: 10, mancanti: 11 }
+    const davvero = { stato: 'raccolta', chiave: 'davvero', mancaCon: 5, mancaSenza: 5, mancanti: 10 }
+    expect(fattorePiuVicino([quasi, davvero]).chiave).toBe('davvero')
   })
 
   it('se nessun fattore è in raccolta, non c’è nulla da indicare', () => {
